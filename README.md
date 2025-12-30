@@ -1,0 +1,1 @@
+# .net_masstransit_saga_pattern
