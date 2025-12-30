@@ -1,0 +1,236 @@
+1. Domena: „Travel Booking Platform” (enterprise-grade)
+
+To nie jest prosta rezerwacja. To proces biznesowy trwający nawet kilka godzin, z wieloma punktami awarii.
+
+Wysoki poziom
+
+Użytkownik chce zarezerwować całą podróż:
+
+lot w obie strony
+
+hotel
+
+transport lokalny
+
+ubezpieczenie
+
+płatność (autoryzacja + capture)
+
+możliwość ręcznej interwencji
+
+możliwość timeoutów i automatycznych anulowań
+
+2. Mikroserwisy (rozbudowana architektura)
+2.1. Trip.API (Entry Point + BFF)
+
+Odpowiedzialność
+
+Publiczne REST API
+
+Startuje SAGĘ
+
+Udostępnia status rezerwacji
+
+Baza
+
+TripDb
+
+Przykładowe endpointy
+
+POST /trips
+
+GET /trips/{id}
+
+POST /trips/{id}/cancel
+
+2.2. TripBooking.Saga (osobny projekt!)
+
+Odpowiedzialność
+
+Orkiestracja całego procesu
+
+Brak logiki infrastrukturalnej
+
+Tylko workflow i decyzje
+
+Persistencja
+
+EF Core / SQL Server
+
+Tabela TripBookingSagaState
+
+2.3. FlightBooking.API
+
+Złożoność
+
+Lot w jedną stronę
+
+Lot powrotny
+
+Różni przewoźnicy
+
+Możliwa częściowa rezerwacja
+
+Komendy
+
+ReserveOutboundFlight
+
+ReserveReturnFlight
+
+CancelFlight
+
+Eventy
+
+FlightReserved
+
+FlightReservationPartiallyFailed
+
+FlightReservationFailed
+
+2.4. HotelBooking.API
+
+Złożoność
+
+Różne polityki anulowania
+
+Płatność częściowa
+
+Limit czasu potwierdzenia
+
+Komendy
+
+ReserveHotel
+
+ConfirmHotel
+
+CancelHotel
+
+Eventy
+
+HotelReserved
+
+HotelConfirmationExpired
+
+HotelReservationFailed
+
+2.5. GroundTransport.API
+
+Odpowiedzialność
+
+Transfer lotnisko–hotel
+
+Wynajem auta
+
+Cechy
+
+Może być opcjonalny
+
+Saga musi obsłużyć „brak”
+
+2.6. Insurance.API
+
+Złożoność
+
+Ubezpieczenie aktywne dopiero po pełnej rezerwacji
+
+Wymaga numerów lotów i hotelu
+
+2.7. Payment.API (najtrudniejszy element)
+
+Proces
+
+Autoryzacja (blokada środków)
+
+Capture po sukcesie całej sagi
+
+Release przy porażce
+
+Komendy
+
+AuthorizePayment
+
+CapturePayment
+
+ReleasePayment
+
+Eventy
+
+PaymentAuthorized
+
+PaymentFailed
+
+PaymentCaptured
+
+2.8. Notification.API (asynchroniczny side-effect)
+
+Email
+
+SMS
+
+Push
+
+NIE wpływa na stan sagi
+
+3. Stany Sagi (rozbudowane)
+
+Przykładowe stany:
+
+Initial
+
+AwaitingOutboundFlight
+
+AwaitingReturnFlight
+
+AwaitingHotel
+
+AwaitingGroundTransport
+
+AwaitingInsurance
+
+AwaitingPaymentAuthorization
+
+AwaitingFinalConfirmation
+
+Completed
+
+Failed
+
+Compensating
+
+Cancelled
+
+TimedOut
+
+ManualReviewRequired
+
+4. Zdarzenia czasowe (Schedule)
+
+Saga MUSI mieć:
+
+timeout na rezerwację hotelu (np. 15 min)
+
+timeout na autoryzację płatności
+
+automatyczne anulowanie po braku reakcji użytkownika
+
+retry z backoffem
+
+MassTransit:
+
+Schedule
+
+Unschedule
+
+DelayedMessageScheduler
+
+5. Kompensacje (prawdziwe, nie „if else”)
+
+Przykłady:
+
+Co się nie udało	Co trzeba cofnąć
+Hotel failed	Cancel flight
+Payment failed	Cancel flight + hotel
+Timeout	Release payment + cancel wszystko
+User cancel	Wszystkie kompensacje
+
+Saga musi pamiętać, co się już udało.
