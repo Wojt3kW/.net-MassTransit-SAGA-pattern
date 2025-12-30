@@ -1,0 +1,38 @@
+@HotelBooking.API_HostAddress = http://localhost:5271
+
+### Get all hotel reservations
+GET {{HotelBooking.API_HostAddress}}/api/hotel-reservations
+Accept: application/json
+
+### Get all hotel reservations with pagination
+GET {{HotelBooking.API_HostAddress}}/api/hotel-reservations?page=1&pageSize=10
+Accept: application/json
+
+### Get hotel reservations by trip ID
+GET {{HotelBooking.API_HostAddress}}/api/hotel-reservations?tripId=aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa
+Accept: application/json
+
+### Get hotel reservations by status (Pending, Reserved, Confirmed, Cancelled, Expired, Failed)
+GET {{HotelBooking.API_HostAddress}}/api/hotel-reservations?status=Confirmed
+Accept: application/json
+
+### Get hotel reservations by hotel ID
+GET {{HotelBooking.API_HostAddress}}/api/hotel-reservations?hotelId=HTL-NYC-001
+Accept: application/json
+
+### Get a specific hotel reservation by ID
+GET {{HotelBooking.API_HostAddress}}/api/hotel-reservations/11111111-1111-1111-1111-111111111111
+Accept: application/json
+
+### Delete a hotel reservation
+DELETE {{HotelBooking.API_HostAddress}}/api/hotel-reservations/33333333-3333-3333-3333-333333333333
+
+### Health check
+GET {{HotelBooking.API_HostAddress}}/health
+Accept: application/json
+
+### Liveness check
+GET {{HotelBooking.API_HostAddress}}/alive
+Accept: application/json
+
+###

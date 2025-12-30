@@ -1,0 +1,43 @@
+@Notification.API_HostAddress = http://localhost:5129
+
+### Get all notifications (paginated)
+GET {{Notification.API_HostAddress}}/api/notifications?page=1&pageSize=10
+Accept: application/json
+
+### Get notifications filtered by tripId
+GET {{Notification.API_HostAddress}}/api/notifications?tripId=aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa
+Accept: application/json
+
+### Get notifications filtered by status
+GET {{Notification.API_HostAddress}}/api/notifications?status=Sent
+Accept: application/json
+
+### Get notifications filtered by type
+GET {{Notification.API_HostAddress}}/api/notifications?type=BookingConfirmation
+Accept: application/json
+
+### Get notifications filtered by channel
+GET {{Notification.API_HostAddress}}/api/notifications?channel=Email
+Accept: application/json
+
+### Get notifications with multiple filters
+GET {{Notification.API_HostAddress}}/api/notifications?tripId=cccccccc-cccc-cccc-cccc-cccccccccccc&type=Cancellation&channel=Email
+Accept: application/json
+
+### Get notification by ID (booking confirmation email)
+GET {{Notification.API_HostAddress}}/api/notifications/11111111-1111-1111-1111-111111111111
+Accept: application/json
+
+### Get notification by ID (failed push notification)
+GET {{Notification.API_HostAddress}}/api/notifications/55555555-5555-5555-5555-555555555555
+Accept: application/json
+
+### Get notification by ID (non-existent)
+GET {{Notification.API_HostAddress}}/api/notifications/00000000-0000-0000-0000-000000000000
+Accept: application/json
+
+### Delete notification by ID
+DELETE {{Notification.API_HostAddress}}/api/notifications/55555555-5555-5555-5555-555555555555
+Accept: application/json
+
+###

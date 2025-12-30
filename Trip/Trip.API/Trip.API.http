@@ -1,0 +1,52 @@
+@Trip.API_HostAddress = http://localhost:5120
+
+### Create a new trip booking
+POST {{Trip.API_HostAddress}}/api/trips
+Content-Type: application/json
+
+{
+  "customerId": "c1111111-1111-1111-1111-111111111111",
+  "customerEmail": "new.customer@email.com",
+  "tripDetails": {
+    "outboundFlightNumber": "BA100",
+    "returnFlightNumber": "BA101",
+    "hotelId": "HTL-NYC-002",
+    "numberOfGuests": 2,
+    "departureDate": "2025-06-01",
+    "returnDate": "2025-06-08"
+  }
+}
+
+### Get a completed trip
+GET {{Trip.API_HostAddress}}/api/trips/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa
+Accept: application/json
+
+### Get a cancelled trip
+GET {{Trip.API_HostAddress}}/api/trips/cccccccc-cccc-cccc-cccc-cccccccccccc
+Accept: application/json
+
+### Get a processing trip
+GET {{Trip.API_HostAddress}}/api/trips/dddddddd-dddd-dddd-dddd-dddddddddddd
+Accept: application/json
+
+### Get a pending trip
+GET {{Trip.API_HostAddress}}/api/trips/eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee
+Accept: application/json
+
+### Get non-existent trip (404)
+GET {{Trip.API_HostAddress}}/api/trips/00000000-0000-0000-0000-000000000000
+Accept: application/json
+
+### Cancel a trip
+POST {{Trip.API_HostAddress}}/api/trips/eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee/cancel
+Content-Type: application/json
+
+### Health check
+GET {{Trip.API_HostAddress}}/health
+Accept: application/json
+
+### Liveness check
+GET {{Trip.API_HostAddress}}/alive
+Accept: application/json
+
+###

@@ -1,0 +1,38 @@
+@GroundTransport.API_HostAddress = http://localhost:5133
+
+### Get all transport reservations
+GET {{GroundTransport.API_HostAddress}}/api/transport-reservations
+Accept: application/json
+
+### Get all transport reservations with pagination
+GET {{GroundTransport.API_HostAddress}}/api/transport-reservations?page=1&pageSize=10
+Accept: application/json
+
+### Get transport reservations by trip ID
+GET {{GroundTransport.API_HostAddress}}/api/transport-reservations?tripId=aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa
+Accept: application/json
+
+### Get transport reservations by status (Pending, Confirmed, Cancelled, Failed)
+GET {{GroundTransport.API_HostAddress}}/api/transport-reservations?status=Confirmed
+Accept: application/json
+
+### Get transport reservations by type (AirportTransfer, CarRental)
+GET {{GroundTransport.API_HostAddress}}/api/transport-reservations?type=AirportTransfer
+Accept: application/json
+
+### Get a specific transport reservation by ID
+GET {{GroundTransport.API_HostAddress}}/api/transport-reservations/55555555-5555-5555-5555-555555555555
+Accept: application/json
+
+### Delete a transport reservation
+DELETE {{GroundTransport.API_HostAddress}}/api/transport-reservations/88888888-8888-8888-8888-888888888888
+
+### Health check
+GET {{GroundTransport.API_HostAddress}}/health
+Accept: application/json
+
+### Liveness check
+GET {{GroundTransport.API_HostAddress}}/alive
+Accept: application/json
+
+###

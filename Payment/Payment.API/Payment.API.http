@@ -1,0 +1,38 @@
+@Payment.API_HostAddress = http://localhost:5086
+
+### Get all payment transactions
+GET {{Payment.API_HostAddress}}/api/payment-transactions
+Accept: application/json
+
+### Get all payment transactions with pagination
+GET {{Payment.API_HostAddress}}/api/payment-transactions?page=1&pageSize=10
+Accept: application/json
+
+### Get payment transactions by trip ID
+GET {{Payment.API_HostAddress}}/api/payment-transactions?tripId=aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa
+Accept: application/json
+
+### Get payment transactions by status (Pending, Authorised, Captured, Released, Refunded, Failed)
+GET {{Payment.API_HostAddress}}/api/payment-transactions?status=Captured
+Accept: application/json
+
+### Get payment transactions by transaction ID
+GET {{Payment.API_HostAddress}}/api/payment-transactions?transactionId=11111111-1111-1111-1111-111111111111
+Accept: application/json
+
+### Get a specific payment transaction by ID
+GET {{Payment.API_HostAddress}}/api/payment-transactions/11111111-1111-1111-1111-111111111111
+Accept: application/json
+
+### Delete a payment transaction
+DELETE {{Payment.API_HostAddress}}/api/payment-transactions/44444444-4444-4444-4444-444444444444
+
+### Health check
+GET {{Payment.API_HostAddress}}/health
+Accept: application/json
+
+### Liveness check
+GET {{Payment.API_HostAddress}}/alive
+Accept: application/json
+
+###

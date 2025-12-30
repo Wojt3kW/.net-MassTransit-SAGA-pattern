@@ -1,0 +1,38 @@
+@Insurance.API_HostAddress = http://localhost:5077
+
+### Get all insurance policies
+GET {{Insurance.API_HostAddress}}/api/insurance-policies
+Accept: application/json
+
+### Get all insurance policies with pagination
+GET {{Insurance.API_HostAddress}}/api/insurance-policies?page=1&pageSize=10
+Accept: application/json
+
+### Get insurance policies by trip ID
+GET {{Insurance.API_HostAddress}}/api/insurance-policies?tripId=aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa
+Accept: application/json
+
+### Get insurance policies by status (Pending, Issued, Cancelled, Failed)
+GET {{Insurance.API_HostAddress}}/api/insurance-policies?status=Issued
+Accept: application/json
+
+### Get insurance policies by policy number
+GET {{Insurance.API_HostAddress}}/api/insurance-policies?policyNumber=INS-2025
+Accept: application/json
+
+### Get a specific insurance policy by ID
+GET {{Insurance.API_HostAddress}}/api/insurance-policies/11111111-1111-1111-1111-111111111111
+Accept: application/json
+
+### Delete an insurance policy
+DELETE {{Insurance.API_HostAddress}}/api/insurance-policies/44444444-4444-4444-4444-444444444444
+
+### Health check
+GET {{Insurance.API_HostAddress}}/health
+Accept: application/json
+
+### Liveness check
+GET {{Insurance.API_HostAddress}}/alive
+Accept: application/json
+
+###

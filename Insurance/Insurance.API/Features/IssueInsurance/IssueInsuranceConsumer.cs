@@ -1,0 +1,60 @@
+using Insurance.Domain.Entities;
+using Insurance.Infrastructure.Persistence;
+using Insurance.Contracts.Events;
+using MassTransit;
+using IssueInsuranceCommand = Insurance.Contracts.Commands.IssueInsurance;
+
+namespace Insurance.API.Features.IssueInsurance;
+
+public class IssueInsuranceConsumer : IConsumer<IssueInsuranceCommand>
+{
+    private readonly InsuranceDbContext _dbContext;
+
+    public IssueInsuranceConsumer(InsuranceDbContext dbContext)
+    {
+        _dbContext = dbContext;
+    }
+
+    public async Task Consume(ConsumeContext<IssueInsuranceCommand> context)
+    {
+        var command = context.Message;
+
+        var premium = CalculatePremium(command.TripTotalValue);
+        
+        var policy = new InsurancePolicy
+        {
+            Id = Guid.NewGuid(),
+            TripId = command.TripId,
+            CustomerId = command.CustomerId,
+            CustomerName = command.CustomerName,
+            CustomerEmail = command.CustomerEmail,
+            PolicyNumber = GeneratePolicyNumber(),
+            CoverageStartDate = command.CoverageStartDate,
+            CoverageEndDate = command.CoverageEndDate,
+            OutboundFlightReservationId = command.OutboundFlightReservationId,
+            ReturnFlightReservationId = command.ReturnFlightReservationId,
+            HotelReservationId = command.HotelReservationId,
+            TripTotalValue = command.TripTotalValue,
+            Premium = premium,
+            Status = InsurancePolicyStatus.Issued,
+            CreatedAt = DateTime.UtcNow,
+            IssuedAt = DateTime.UtcNow
+        };
+
+        _dbContext.InsurancePolicies.Add(policy);
+        await _dbContext.SaveChangesAsync();
+
+        await context.Publish(new InsuranceIssued(
+            command.CorrelationId,
+            command.TripId,
+            policy.Id,
+            policy.PolicyNumber!,
+            policy.CoverageStartDate,
+            policy.CoverageEndDate,
+            policy.Premium));
+    }
+
+    private static string GeneratePolicyNumber() => $"INS-{DateTime.UtcNow:yyyyMMdd}-{Guid.NewGuid().ToString()[..6].ToUpper()}";
+    
+    private static decimal CalculatePremium(decimal tripValue) => tripValue * 0.05m; // 5% of trip value
+}

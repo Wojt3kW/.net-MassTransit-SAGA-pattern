@@ -20,8 +20,8 @@ This is a complex business process that can span several hours, with multiple fa
 ## Technology Stack
 
 ### Core Technologies
-- **.NET 9** - Target framework
-- **C# 13** - Programming language
+- **.NET 10** - Target framework
+- **C# 14** - Programming language
 - **MS SQL Server** - Database (separate database per microservice)
 - **RabbitMQ** - Message broker
 - **MassTransit** - Message bus abstraction and SAGA orchestration
@@ -29,10 +29,12 @@ This is a complex business process that can span several hours, with multiple fa
 - **Entity Framework Core** - ORM
 
 ### Architecture Patterns
+- **Clean Architecture** - Layered architecture with dependency inversion
 - **Vertical Slice Architecture** - Feature-based code organisation
 - **CQRS** - Command Query Responsibility Segregation
 - **Event-Driven Architecture** - Asynchronous communication
 - **Orchestration SAGA Pattern** - Distributed transaction management
+- **Repository Pattern** - Data access abstraction
 - **Inbox Pattern** - Message idempotency and exactly-once delivery
 - **Outbox Pattern** - At-least-once delivery guarantee
 
@@ -60,6 +62,186 @@ This is a complex business process that can span several hours, with multiple fa
 - **NSubstitute** - Mocking library
 - **Testcontainers** - Integration and E2E testing with real dependencies
 - **FluentAssertions** - Assertion library
+
+---
+
+## Solution Structure
+
+```
+SAGA pattern.sln
+├── SAGA pattern.AppHost/              # .NET Aspire orchestrator
+│   └── Program.cs
+├── SAGA pattern.ServiceDefaults/      # Shared service configuration
+│   ├── Extensions.cs
+│   └── Settings/
+│       ├── ApiSettings.cs
+│       └── ConnectionStrings.cs
+│
+├── Trip/
+│   ├── Trip.Domain/                   # Entities (zero dependencies)
+│   │   └── Entities/
+│   │       └── TripBooking.cs
+│   ├── Trip.Application/              # Use cases, repository interfaces
+│   │   └── Abstractions/
+│   │       └── ITripRepository.cs
+│   ├── Trip.Infrastructure/           # Persistence implementations
+│   │   ├── Persistence/
+│   │   │   └── TripDbContext.cs
+│   │   └── Repositories/
+│   │       └── TripRepository.cs
+│   ├── Trip.API/                      # Entry point, starts SAGA
+│   │   ├── Features/
+│   │   │   ├── CreateTrip/
+│   │   │   │   ├── CreateTripCommand.cs
+│   │   │   │   ├── CreateTripCommandValidator.cs
+│   │   │   │   ├── CreateTripEndpoint.cs
+│   │   │   │   └── CreateTripHandler.cs
+│   │   │   ├── GetTrip/
+│   │   │   │   ├── GetTripEndpoint.cs
+│   │   │   │   ├── GetTripHandler.cs
+│   │   │   │   └── GetTripQuery.cs
+│   │   │   ├── CancelTrip/
+│   │   │   │   ├── CancelTripCommand.cs
+│   │   │   │   ├── CancelTripEndpoint.cs
+│   │   │   │   └── CancelTripHandler.cs
+│   │   │   ├── IEndpoint.cs
+│   │   │   ├── EndpointExtensions.cs
+│   │   │   └── ValidationBehavior.cs
+│   │   └── Program.cs
+│   └── Trip.Contracts/                # Shared DTOs, Commands, Events
+│       ├── Commands/
+│       │   ├── CreateTripBooking.cs
+│       │   └── CancelTripBooking.cs
+│       ├── Events/
+│       │   ├── TripBookingCreated.cs
+│       │   ├── TripBookingCompleted.cs
+│       │   ├── TripBookingFailed.cs
+│       │   └── TripBookingCancelled.cs
+│       └── DTOs/
+│           ├── TripBookingResponse.cs
+│           └── TripBookingStatusResponse.cs
+│
+├── TripBooking.Saga/                  # SAGA State Machine orchestrator (for you to implement)
+│
+├── FlightBooking/
+│   ├── FlightBooking.Domain/
+│   │   └── Entities/
+│   │       └── FlightReservation.cs
+│   ├── FlightBooking.Application/
+│   │   └── Abstractions/
+│   │       └── IFlightReservationRepository.cs
+│   ├── FlightBooking.Infrastructure/
+│   │   ├── Persistence/
+│   │   └── Repositories/
+│   ├── FlightBooking.API/
+│   │   ├── Features/
+│   │   │   ├── ReserveOutboundFlight/
+│   │   │   ├── ReserveReturnFlight/
+│   │   │   └── CancelFlight/
+│   │   └── Program.cs
+│   └── FlightBooking.Contracts/
+│       ├── Commands/
+│       └── Events/
+│
+├── HotelBooking/
+│   ├── HotelBooking.Domain/
+│   │   └── Entities/
+│   │       └── HotelReservation.cs
+│   ├── HotelBooking.Application/
+│   │   └── Abstractions/
+│   │       └── IHotelReservationRepository.cs
+│   ├── HotelBooking.Infrastructure/
+│   │   ├── Persistence/
+│   │   └── Repositories/
+│   ├── HotelBooking.API/
+│   │   ├── Features/
+│   │   │   ├── ReserveHotel/
+│   │   │   ├── ConfirmHotel/
+│   │   │   └── CancelHotel/
+│   │   └── Program.cs
+│   └── HotelBooking.Contracts/
+│       ├── Commands/
+│       └── Events/
+│
+├── GroundTransport/
+│   ├── GroundTransport.Domain/
+│   │   └── Entities/
+│   │       └── TransportReservation.cs
+│   ├── GroundTransport.Application/
+│   │   └── Abstractions/
+│   │       └── ITransportReservationRepository.cs
+│   ├── GroundTransport.Infrastructure/
+│   │   ├── Persistence/
+│   │   └── Repositories/
+│   ├── GroundTransport.API/
+│   │   ├── Features/
+│   │   │   ├── ReserveGroundTransport/
+│   │   │   └── CancelGroundTransport/
+│   │   └── Program.cs
+│   └── GroundTransport.Contracts/
+│       ├── Commands/
+│       └── Events/
+│
+├── Insurance/
+│   ├── Insurance.Domain/
+│   │   └── Entities/
+│   │       └── InsurancePolicy.cs
+│   ├── Insurance.Application/
+│   │   └── Abstractions/
+│   │       └── IInsurancePolicyRepository.cs
+│   ├── Insurance.Infrastructure/
+│   │   ├── Persistence/
+│   │   └── Repositories/
+│   ├── Insurance.API/
+│   │   ├── Features/
+│   │   │   ├── IssueInsurance/
+│   │   │   └── CancelInsurance/
+│   │   └── Program.cs
+│   └── Insurance.Contracts/
+│       ├── Commands/
+│       └── Events/
+│
+├── Payment/
+│   ├── Payment.Domain/
+│   │   └── Entities/
+│   │       └── PaymentTransaction.cs
+│   ├── Payment.Application/
+│   │   └── Abstractions/
+│   │       └── IPaymentTransactionRepository.cs
+│   ├── Payment.Infrastructure/
+│   │   ├── Persistence/
+│   │   └── Repositories/
+│   ├── Payment.API/
+│   │   ├── Features/
+│   │   │   ├── AuthorisePayment/
+│   │   │   ├── CapturePayment/
+│   │   │   ├── ReleasePayment/
+│   │   │   └── RefundPayment/
+│   │   └── Program.cs
+│   └── Payment.Contracts/
+│       ├── Commands/
+│       └── Events/
+│
+└── Notification/
+    ├── Notification.Domain/
+    │   └── Entities/
+    │       └── NotificationRecord.cs
+    ├── Notification.Application/
+    │   └── Abstractions/
+    │       └── INotificationRepository.cs
+    ├── Notification.Infrastructure/
+    │   ├── Persistence/
+    │   └── Repositories/
+    ├── Notification.API/
+    │   ├── Features/
+    │   │   ├── SendBookingConfirmation/
+    │   │   ├── SendBookingFailure/
+    │   │   └── SendCancellation/
+    │   └── Program.cs
+    └── Notification.Contracts/
+        ├── Commands/
+        └── Events/
+```
 
 ---
 
@@ -282,38 +464,158 @@ Initial
 
 ## Coding Standards
 
+### Code Documentation
+- **Add XML comments to classes** - Use `/// <summary>` to describe the purpose of each class
+- **Add XML comments to properties** - Use `/// <summary>` to explain what each property represents
+- Keep comments **short and concise** - One line is usually sufficient
+- Use proper English grammar in comments
+
+```csharp
+// ✅ Good - Short, descriptive comments
+/// <summary>
+/// Represents a complete travel booking containing all trip components.
+/// </summary>
+public class TripBooking
+{
+    /// <summary>Unique identifier of the trip booking.</summary>
+    public Guid Id { get; set; }
+    
+    /// <summary>Customer who made the booking.</summary>
+    public Guid CustomerId { get; set; }
+    
+    /// <summary>Current status of the trip booking process.</summary>
+    public TripStatus Status { get; set; }
+}
+```
+
+### File Organisation (Single Responsibility)
+- **One type per file** - Each class, record, enum, or interface MUST be in its own separate file
+- File name MUST match the type name (e.g., `TripStatus.cs` for `enum TripStatus`)
+- This applies to all layers: Domain, Application, Infrastructure, API, and Contracts
+
+### Prefer Records Over Classes
+- **Use `record` for immutable data types** - DTOs, Commands, Events, Value Objects
+- **Use `class` only when** mutability or identity semantics are required (e.g., Entities with EF Core tracking)
+- Records provide: immutability, value equality, `with` expressions, and concise syntax
+
+```csharp
+// ✅ Good - Records for immutable data
+public record CreateTripCommand(Guid CustomerId, string Email, TripDetailsDto Details);
+public record TripBookingResponse(Guid TripId, string Status, DateTime CreatedAt);
+public record FlightDetails(string Origin, string Destination, DateTime DepartureDate);
+
+// ✅ Good - Class for mutable entity with identity
+public class TripBooking
+{
+    public Guid Id { get; set; }
+    public TripStatus Status { get; set; }
+    // ... mutable properties tracked by EF Core
+}
+```
+
 ### Naming Conventions
 - PascalCase for public members
 - camelCase for private fields with underscore prefix (`_fieldName`)
 - Async suffix for async methods (`GetTripAsync`)
 
-### Project Structure (Vertical Slice)
+### Null Checking
+- **Prefer `is null`** over `== null` for null checks
+- **Prefer `is not null`** over `!= null` for non-null checks
+- Pattern matching is more readable and avoids operator overloading issues
+
+```csharp
+// ✅ Good - Pattern matching
+if (trip is null) return null;
+if (reservation is not null) { ... }
+
+// ❌ Avoid - Equality operators
+if (trip == null) return null;
+if (reservation != null) { ... }
 ```
-ServiceName.API/
-├── Features/
-│   ├── FeatureName/
-│   │   ├── Command.cs
-│   │   ├── CommandHandler.cs
-│   │   ├── CommandValidator.cs
-│   │   ├── Query.cs
-│   │   ├── QueryHandler.cs
-│   │   └── Endpoint.cs
-├── Domain/
-│   ├── Entities/
-│   └── ValueObjects/
-├── Infrastructure/
+
+### DateTime Handling
+- **Always use `DateTime.UtcNow`** - Never use `DateTime.Now` to avoid timezone issues
+- **Store all timestamps in UTC** - Convert to local time only for display
+- **Use `datetime2(3)` precision** - Millisecond precision is sufficient for most use cases
+- Configure precision in DbContext using `.HasPrecision(3)`
+
+```csharp
+// ✅ Good - UTC timestamps
+CreatedAt = DateTime.UtcNow;
+entity.Property(e => e.CreatedAt).HasPrecision(3);  // datetime2(3) in SQL Server
+
+// ❌ Avoid - Local time
+CreatedAt = DateTime.Now;
+```
+
+### Project Structure (Clean Architecture + Vertical Slice + REPR Pattern)
+
+Each microservice follows Clean Architecture with 5 projects:
+
+```
+ServiceName/
+├── ServiceName.Domain/            # Entities (ZERO dependencies)
+│   └── Entities/
+│       └── Entity.cs
+├── ServiceName.Application/       # Use cases, interfaces (depends on Domain)
+│   └── Abstractions/
+│       └── IEntityRepository.cs
+├── ServiceName.Infrastructure/    # Implementations (depends on Domain + Application)
 │   ├── Persistence/
-│   │   ├── DbContext.cs
-│   │   ├── Configurations/
-│   │   └── Migrations/
-│   ├── Messaging/
-│   │   ├── Consumers/
-│   │   └── Publishers/
-│   └── Services/
-├── Contracts/
-│   ├── Commands/
-│   └── Events/
-└── Program.cs
+│   │   └── ServiceNameDbContext.cs
+│   └── Repositories/
+│       └── EntityRepository.cs
+├── ServiceName.API/               # Presentation (depends on Application + Infrastructure*)
+│   ├── Features/
+│   │   └── FeatureName/
+│   │       ├── FeatureNameEndpoint.cs     # Minimal API endpoint (REPR)
+│   │       ├── FeatureNameCommand.cs      # Request DTO
+│   │       ├── FeatureNameHandler.cs      # MediatR handler
+│   │       ├── FeatureNameValidator.cs    # FluentValidation
+│   │       └── FeatureNameResponse.cs     # Response DTO
+│   └── Program.cs
+└── ServiceName.Contracts/         # Shared message contracts
+    ├── Commands/
+    └── Events/
+```
+
+*\* API references Infrastructure only for Composition Root (DI registration)*
+
+### Clean Architecture Dependency Rules
+
+```
+┌─────────────────────────────────────────────┐
+│                   API                        │  ← Composition Root
+├─────────────────────────────────────────────┤
+│              Infrastructure                  │  ← Implements Application interfaces
+├─────────────────────────────────────────────┤
+│               Application                    │  ← Defines interfaces (ports)
+├─────────────────────────────────────────────┤
+│                 Domain                       │  ← Pure business entities
+└─────────────────────────────────────────────┘
+
+Dependency Direction: Domain ← Application ← Infrastructure
+                                          ↖        ↗
+                                            API
+```
+
+### REPR Pattern Example
+
+```csharp
+// CreateTripEndpoint.cs
+public class CreateTripEndpoint : IEndpoint
+{
+    public void MapEndpoint(IEndpointRouteBuilder app)
+    {
+        app.MapPost("/api/trips", async (CreateTripCommand command, IMediator mediator) =>
+        {
+            var result = await mediator.Send(command);
+            return Results.Created($"/api/trips/{result.TripId}", result);
+        })
+        .WithName("CreateTrip")
+        .WithOpenApi();
+    }
+}
 ```
 
 ### MassTransit Conventions
@@ -340,18 +642,92 @@ ServiceName.API/
 
 ---
 
-## Docker & Local Development
+## Local Development
 
-### Required Services
+### Run with Aspire
+
+```powershell
+dotnet run --project "SAGA pattern.AppHost"
+```
+
+Aspire Dashboard: `http://localhost:15888`
+
+### Required Infrastructure (via Aspire)
 - SQL Server 2022
 - RabbitMQ with management plugin
-- Jaeger
-- Prometheus
-- Grafana
-- Kibana + Elasticsearch
 
-### Aspire Integration
-Use .NET Aspire for local development orchestration with automatic service discovery and health monitoring.
+### EF Core Migrations
+
+Each microservice has an `add-migration.bat` script in its Infrastructure project for creating migrations.
+
+**Location:** `{ServiceName}/{ServiceName}.Infrastructure/add-migration.bat`
+
+**Usage:**
+```powershell
+# Navigate to Infrastructure project and run the script with migration name
+cd Trip\Trip.Infrastructure
+.\add-migration.bat my_migration_name
+```
+
+**Available migration scripts:**
+- `Trip/Trip.Infrastructure/add-migration.bat`
+- `FlightBooking/FlightBooking.Infrastructure/add-migration.bat`
+- `HotelBooking/HotelBooking.Infrastructure/add-migration.bat`
+- `GroundTransport/GroundTransport.Infrastructure/add-migration.bat`
+- `Insurance/Insurance.Infrastructure/add-migration.bat`
+- `Payment/Payment.Infrastructure/add-migration.bat`
+- `Notification/Notification.Infrastructure/add-migration.bat`
+
+**Manual migration command:**
+```powershell
+cd {ServiceName}\{ServiceName}.Infrastructure
+dotnet ef migrations add {migration_name} --startup-project ..\{ServiceName}.API --output-dir Migrations
+```
+
+**Apply migrations:** Migrations are applied automatically at application startup via the `MigrateDatabaseAsync<TDbContext>()` extension method in `Extensions.cs`.
+
+---
+
+## Configuration & Settings
+
+### ApiSettings Pattern
+
+All microservices use centralized configuration via `ApiSettings` record:
+
+**Injecting settings in services:**
+```csharp
+public class SomeService(ApiSettings settings)
+{
+    private readonly string _connectionString = settings.ConnectionStrings.SqlServer;
+}
+```
+
+### Health Checks
+
+Health checks are automatically configured by `AddServiceDefaults()` for:
+- **SQL Server** - Verifies database connectivity (`SELECT 1`)
+- **RabbitMQ** - Verifies message broker connectivity
+- **MassTransit** - Built-in health checks for consumers
+
+**Endpoints:**
+- `/health` - All health checks (readiness probe)
+- `/alive` - Basic liveness check
+
+### CRUD Endpoints
+
+Each microservice exposes standard CRUD endpoints for testing:
+
+| Endpoint | Description |
+|----------|-------------|
+| `GET /api/{resource}` | List all with filtering and pagination |
+| `GET /api/{resource}/{id:guid}` | Get by ID |
+| `DELETE /api/{resource}/{id:guid}` | Delete by ID |
+
+**Query Parameters for GET all:**
+- `tripId` - Filter by trip booking ID
+- `status` - Filter by status (service-specific)
+- `page` - Page number (default: 1)
+- `pageSize` - Items per page (default: 10)
 
 ---
 
@@ -364,6 +740,8 @@ Use .NET Aspire for local development orchestration with automatic service disco
 5. **Retry Policy:** Use exponential backoff for retries
 6. **Dead Letter Queue:** Configure DLQ for unprocessable messages
 7. **Feature Flags:** Consider feature flags for gradual rollout
+8. **Configuration:** Use `ApiSettings` pattern for all configuration needs - inject via constructor
+9. **Documentation Lookup:** Always use `io.github.upstash/context7` MCP server to fetch up-to-date documentation for libraries before implementing features
 
 ---
 
