@@ -43,14 +43,22 @@ var app = builder.Build();
 await app.MigrateDatabaseAsync<GroundTransportDbContext>();
 
 app.MapDefaultEndpoints();
-app.MapEndpoints();
 
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
+    app.UseSwaggerUI(options =>
+    {
+        options.SwaggerEndpoint("/openapi/v1.json", "GroundTransport API");
+    });
+    
+    // Redirect root to Swagger UI
+    app.MapGet("/", () => Results.Redirect("/swagger")).ExcludeFromDescription();
 }
 
 app.UseHttpsRedirection();
+
+app.MapEndpoints();
 
 app.Run();
 
