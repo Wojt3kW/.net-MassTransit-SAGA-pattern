@@ -40,7 +40,6 @@ public class GetTransportReservationEndpoint : IEndpoint
         })
         .WithName("GetTransportReservation")
         .WithTags("TransportReservations")
-        .WithOpenApi()
         .Produces<TransportReservationResponse>()
         .Produces(StatusCodes.Status404NotFound);
     }

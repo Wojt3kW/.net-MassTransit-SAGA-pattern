@@ -20,7 +20,6 @@ public class DeleteFlightReservationEndpoint : IEndpoint
         })
         .WithName("DeleteFlightReservation")
         .WithTags("FlightReservations")
-        .WithOpenApi()
         .Produces(StatusCodes.Status204NoContent)
         .Produces(StatusCodes.Status404NotFound);
     }

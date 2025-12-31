@@ -14,7 +14,6 @@ public class GetTripEndpoint : IEndpoint
             return result is null ? Results.NotFound() : Results.Ok(result);
         })
         .WithName("GetTrip")
-        .WithOpenApi()
         .Produces<TripBookingStatusResponse>()
         .Produces(StatusCodes.Status404NotFound);
     }

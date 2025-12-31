@@ -19,7 +19,6 @@ public class DeleteHotelReservationEndpoint : IEndpoint
         })
         .WithName("DeleteHotelReservation")
         .WithTags("HotelReservations")
-        .WithOpenApi()
         .Produces(StatusCodes.Status204NoContent)
         .Produces(StatusCodes.Status404NotFound);
     }

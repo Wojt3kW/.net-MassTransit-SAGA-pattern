@@ -20,7 +20,6 @@ public class DeletePaymentTransactionEndpoint : IEndpoint
         })
         .WithName("DeletePaymentTransaction")
         .WithTags("PaymentTransactions")
-        .WithOpenApi()
         .Produces(StatusCodes.Status204NoContent)
         .Produces(StatusCodes.Status404NotFound);
     }

@@ -20,7 +20,6 @@ public class DeleteInsurancePolicyEndpoint : IEndpoint
         })
         .WithName("DeleteInsurancePolicy")
         .WithTags("InsurancePolicies")
-        .WithOpenApi()
         .Produces(StatusCodes.Status204NoContent)
         .Produces(StatusCodes.Status404NotFound);
     }

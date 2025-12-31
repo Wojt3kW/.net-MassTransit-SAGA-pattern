@@ -38,7 +38,6 @@ public class GetNotificationEndpoint : IEndpoint
         })
         .WithName("GetNotification")
         .WithTags("Notifications")
-        .WithOpenApi()
         .Produces<NotificationRecordResponse>()
         .Produces(StatusCodes.Status404NotFound);
     }

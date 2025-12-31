@@ -53,7 +53,6 @@ public class GetPaymentTransactionsEndpoint : IEndpoint
         })
         .WithName("GetPaymentTransactions")
         .WithTags("PaymentTransactions")
-        .WithOpenApi()
         .Produces<PaymentTransactionListResponse>();
     }
 }

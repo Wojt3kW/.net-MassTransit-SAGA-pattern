@@ -51,7 +51,6 @@ public class GetTransportReservationsEndpoint : IEndpoint
         })
         .WithName("GetTransportReservations")
         .WithTags("TransportReservations")
-        .WithOpenApi()
         .Produces<TransportReservationListResponse>();
     }
 }

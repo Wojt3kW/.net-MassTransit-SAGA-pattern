@@ -44,7 +44,6 @@ public class GetHotelReservationEndpoint : IEndpoint
         })
         .WithName("GetHotelReservation")
         .WithTags("HotelReservations")
-        .WithOpenApi()
         .Produces<HotelReservationResponse>()
         .Produces(StatusCodes.Status404NotFound);
     }

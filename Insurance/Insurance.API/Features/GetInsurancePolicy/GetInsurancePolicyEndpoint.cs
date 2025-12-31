@@ -44,7 +44,6 @@ public class GetInsurancePolicyEndpoint : IEndpoint
         })
         .WithName("GetInsurancePolicy")
         .WithTags("InsurancePolicies")
-        .WithOpenApi()
         .Produces<InsurancePolicyResponse>()
         .Produces(StatusCodes.Status404NotFound);
     }

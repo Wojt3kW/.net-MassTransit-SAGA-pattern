@@ -14,7 +14,6 @@ public class CreateTripEndpoint : IEndpoint
             return Results.Created($"/api/trips/{result.TripId}", result);
         })
         .WithName("CreateTrip")
-        .WithOpenApi()
         .Produces<TripBookingResponse>(StatusCodes.Status201Created)
         .ProducesValidationProblem();
     }

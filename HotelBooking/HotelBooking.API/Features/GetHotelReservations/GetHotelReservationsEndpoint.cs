@@ -51,7 +51,6 @@ public class GetHotelReservationsEndpoint : IEndpoint
         })
         .WithName("GetHotelReservations")
         .WithTags("HotelReservations")
-        .WithOpenApi()
         .Produces<HotelReservationListResponse>();
     }
 }

@@ -42,7 +42,6 @@ public class GetFlightReservationEndpoint : IEndpoint
         })
         .WithName("GetFlightReservation")
         .WithTags("FlightReservations")
-        .WithOpenApi()
         .Produces<FlightReservationResponse>()
         .Produces(StatusCodes.Status404NotFound);
     }

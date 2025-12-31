@@ -53,7 +53,6 @@ public class GetFlightReservationsEndpoint : IEndpoint
         })
         .WithName("GetFlightReservations")
         .WithTags("FlightReservations")
-        .WithOpenApi()
         .Produces<FlightReservationListResponse>();
     }
 }

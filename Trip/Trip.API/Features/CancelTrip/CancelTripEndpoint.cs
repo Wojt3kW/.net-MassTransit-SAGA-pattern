@@ -1,5 +1,4 @@
 using MediatR;
-using Trip.API.Features;
 
 namespace Trip.API.Features.CancelTrip;
 
@@ -13,10 +12,7 @@ public class CancelTripEndpoint : IEndpoint
             return result ? Results.Accepted() : Results.NotFound();
         })
         .WithName("CancelTrip")
-        .WithOpenApi()
         .Produces(StatusCodes.Status202Accepted)
         .Produces(StatusCodes.Status404NotFound);
     }
 }
-
-public record CancelTripRequest(string Reason);

@@ -41,7 +41,6 @@ public class GetPaymentTransactionEndpoint : IEndpoint
         })
         .WithName("GetPaymentTransaction")
         .WithTags("PaymentTransactions")
-        .WithOpenApi()
         .Produces<PaymentTransactionResponse>()
         .Produces(StatusCodes.Status404NotFound);
     }

@@ -61,7 +61,6 @@ public class GetNotificationsEndpoint : IEndpoint
         })
         .WithName("GetNotifications")
         .WithTags("Notifications")
-        .WithOpenApi()
         .Produces<NotificationRecordListResponse>();
     }
 }

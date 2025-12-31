@@ -56,7 +56,6 @@ public class GetInsurancePoliciesEndpoint : IEndpoint
         })
         .WithName("GetInsurancePolicies")
         .WithTags("InsurancePolicies")
-        .WithOpenApi()
         .Produces<InsurancePolicyListResponse>();
     }
 }
