@@ -17,7 +17,7 @@ public interface IHotelReservationRepository
     Task<(IReadOnlyList<HotelReservation> Items, int TotalCount)> GetAllAsync(
         Guid? tripId = null,
         HotelReservationStatus? status = null,
-        string? hotelId = null,
+        Guid? hotelId = null,
         int page = 1,
         int pageSize = 10,
         CancellationToken cancellationToken = default);

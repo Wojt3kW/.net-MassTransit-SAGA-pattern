@@ -1,9 +1,9 @@
 using MassTransit;
 using MediatR;
 using Trip.Application.Abstractions;
-using Trip.Domain.Entities;
-using Trip.Contracts.Commands;
 using Trip.Contracts.DTOs;
+using Trip.Contracts.Events;
+using Trip.Domain.Entities;
 
 namespace Trip.API.Features.CreateTrip;
 
@@ -24,6 +24,7 @@ public class CreateTripHandler : IRequestHandler<CreateTripCommand, TripBookingR
         {
             Id = Guid.NewGuid(),
             CustomerId = request.CustomerId,
+            CustomerName = request.CustomerName,
             CustomerEmail = request.CustomerEmail,
             Status = TripStatus.Pending,
             TotalAmount = request.Details.Payment.Amount,
@@ -32,46 +33,34 @@ public class CreateTripHandler : IRequestHandler<CreateTripCommand, TripBookingR
 
         await _tripRepository.AddAsync(tripBooking, cancellationToken);
 
-        // Publish event to start SAGA
-        await _publishEndpoint.Publish(new CreateTripBooking(
-            tripBooking.Id,
-            tripBooking.CustomerId,
-            tripBooking.CustomerEmail,
-            new Contracts.Commands.TripDetails(
-                new Contracts.Commands.FlightDetails(
-                    request.Details.OutboundFlight.Origin,
-                    request.Details.OutboundFlight.Destination,
-                    request.Details.OutboundFlight.DepartureDate,
-                    request.Details.OutboundFlight.FlightNumber,
-                    request.Details.OutboundFlight.Carrier),
-                new Contracts.Commands.FlightDetails(
-                    request.Details.ReturnFlight.Origin,
-                    request.Details.ReturnFlight.Destination,
-                    request.Details.ReturnFlight.DepartureDate,
-                    request.Details.ReturnFlight.FlightNumber,
-                    request.Details.ReturnFlight.Carrier),
-                new Contracts.Commands.HotelDetails(
-                    request.Details.Hotel.HotelId,
-                    request.Details.Hotel.HotelName,
-                    request.Details.Hotel.CheckIn,
-                    request.Details.Hotel.CheckOut,
-                    request.Details.Hotel.NumberOfGuests),
-                request.Details.GroundTransport is not null
-                    ? new Contracts.Commands.GroundTransportDetails(
-                        request.Details.GroundTransport.Type,
-                        request.Details.GroundTransport.PickupLocation,
-                        request.Details.GroundTransport.DropoffLocation,
-                        request.Details.GroundTransport.PickupDate)
-                    : null,
-                request.Details.IncludeInsurance,
-                new Contracts.Commands.PaymentDetails(
-                    request.Details.Payment.CardNumber,
-                    request.Details.Payment.CardHolderName,
-                    request.Details.Payment.ExpiryDate,
-                    request.Details.Payment.Cvv,
-                    request.Details.Payment.Amount,
-                    request.Details.Payment.Currency))),
-            cancellationToken);
+        // Publish event to start SAGA orchestration
+        await _publishEndpoint.Publish(new TripBookingCreated(
+            TripId: tripBooking.Id,
+            CustomerId: tripBooking.CustomerId,
+            CustomerName: tripBooking.CustomerName,
+            CustomerEmail: tripBooking.CustomerEmail,
+            Origin: request.Details.OutboundFlight.Origin,
+            Destination: request.Details.OutboundFlight.Destination,
+            DepartureDate: request.Details.OutboundFlight.DepartureDate,
+            ReturnDate: request.Details.ReturnFlight.DepartureDate,
+            OutboundFlightNumber: request.Details.OutboundFlight.FlightNumber,
+            OutboundCarrier: request.Details.OutboundFlight.Carrier,
+            ReturnFlightNumber: request.Details.ReturnFlight.FlightNumber,
+            ReturnCarrier: request.Details.ReturnFlight.Carrier,
+            HotelId: request.Details.Hotel.HotelId,
+            HotelName: request.Details.Hotel.HotelName,
+            CheckIn: request.Details.Hotel.CheckIn,
+            CheckOut: request.Details.Hotel.CheckOut,
+            NumberOfGuests: request.Details.Hotel.NumberOfGuests,
+            IncludeGroundTransport: request.Details.GroundTransport is not null,
+            GroundTransportType: request.Details.GroundTransport?.Type,
+            GroundTransportPickupLocation: request.Details.GroundTransport?.PickupLocation,
+            GroundTransportDropoffLocation: request.Details.GroundTransport?.DropoffLocation,
+            IncludeInsurance: request.Details.IncludeInsurance,
+            PaymentMethodId: request.Details.PaymentMethodId,
+            TotalAmount: request.Details.Payment.Amount,
+            Currency: request.Details.Payment.Currency,
+            CreatedAt: tripBooking.CreatedAt), cancellationToken);
 
         return new TripBookingResponse(
             tripBooking.Id,

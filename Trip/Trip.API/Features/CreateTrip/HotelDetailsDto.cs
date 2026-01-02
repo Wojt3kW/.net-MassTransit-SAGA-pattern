@@ -1,7 +1,7 @@
 namespace Trip.API.Features.CreateTrip;
 
 public record HotelDetailsDto(
-    string HotelId,
+    Guid HotelId,
     string HotelName,
     DateTime CheckIn,
     DateTime CheckOut,

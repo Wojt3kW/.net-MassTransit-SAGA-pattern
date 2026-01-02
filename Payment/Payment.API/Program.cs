@@ -21,6 +21,7 @@ builder.Services.AddDbContext<PaymentDbContext>(options =>
 
 // Repositories
 builder.Services.AddScoped<IPaymentTransactionRepository, PaymentTransactionRepository>();
+builder.Services.AddScoped<IPaymentMethodRepository, PaymentMethodRepository>();
 
 // MassTransit with RabbitMQ
 builder.Services.AddMassTransit(x =>

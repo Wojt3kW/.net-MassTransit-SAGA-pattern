@@ -1,5 +1,6 @@
 namespace FlightBooking.Contracts.Events;
 
+/// <summary>Published when the outbound (departure) flight has been successfully reserved.</summary>
 public record OutboundFlightReserved(
     Guid CorrelationId,
     Guid TripId,

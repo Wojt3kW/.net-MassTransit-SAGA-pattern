@@ -253,14 +253,14 @@ SAGA pattern.sln
 **Database:** `TripDb`
 
 **Endpoints:**
-- `POST /trips` - Create new trip booking
-- `GET /trips/{id}` - Get trip status
-- `POST /trips/{id}/cancel` - Request cancellation
+- `POST /api/trips` - Create new trip booking
+- `GET /api/trips/{id}` - Get trip status
+- `POST /api/trips/{id}/cancel` - Request cancellation
 
 ---
 
-### 2. TripBooking.Saga (Orchestrator)
-**Responsibility:** Orchestrates the entire booking process, contains only workflow logic and decisions
+### 2. TripBooking.Saga.API (Orchestrator & Monitoring)
+**Responsibility:** Orchestrates the entire booking process, provides monitoring and management endpoints
 
 **Database:** `TripBookingSagaDb`
 
@@ -271,6 +271,16 @@ SAGA pattern.sln
 - Timeout scheduling (Quartz)
 - Compensation orchestration
 - Manual review escalation
+
+**Endpoints:**
+- `GET /api/sagas/{tripId}` - Get detailed saga state by trip ID
+- `GET /api/sagas` - List all sagas with pagination and filtering (by state, customerId)
+
+**Architecture:**
+- Uses Vertical Slice Architecture with Features/
+- MediatR for CQRS queries
+- Direct DbContext access for read-only queries
+- No business logic - only orchestration and monitoring
 
 ---
 
@@ -518,6 +528,11 @@ public class TripBooking
 - camelCase for private fields with underscore prefix (`_fieldName`)
 - Async suffix for async methods (`GetTripAsync`)
 
+### Code Organisation
+- **Do NOT use `#region`** - Regions hide code and make navigation harder
+- Use blank lines and comments to separate logical sections instead
+- Keep classes focused and small - if you need regions, the class is likely too large
+
 ### Null Checking
 - **Prefer `is null`** over `== null` for null checks
 - **Prefer `is not null`** over `!= null` for non-null checks
@@ -726,6 +741,21 @@ Each microservice exposes standard CRUD endpoints for testing:
 **Query Parameters for GET all:**
 - `tripId` - Filter by trip booking ID
 - `status` - Filter by status (service-specific)
+- `page` - Page number (default: 1)
+- `pageSize` - Items per page (default: 10)
+
+### SAGA Monitoring Endpoints (TripBooking.Saga.API)
+
+Special read-only endpoints for SAGA monitoring and troubleshooting:
+
+| Endpoint | Description |
+|----------|-------------|
+| `GET /api/sagas/{tripId:guid}` | Get detailed saga state by trip ID |
+| `GET /api/sagas` | List all sagas with pagination |
+
+**Query Parameters for GET /api/sagas:**
+- `state` - Filter by current state (e.g., "Completed", "Failed", "AwaitingPaymentAuthorisation")
+- `customerId` - Filter by customer ID
 - `page` - Page number (default: 1)
 - `pageSize` - Items per page (default: 10)
 

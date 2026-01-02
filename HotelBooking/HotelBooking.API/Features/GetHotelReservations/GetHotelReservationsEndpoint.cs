@@ -15,7 +15,7 @@ public class GetHotelReservationsEndpoint : IEndpoint
             IHotelReservationRepository repository,
             Guid? tripId = null,
             string? status = null,
-            string? hotelId = null,
+            Guid? hotelId = null,
             int page = 1,
             int pageSize = 10,
             CancellationToken cancellationToken = default) =>

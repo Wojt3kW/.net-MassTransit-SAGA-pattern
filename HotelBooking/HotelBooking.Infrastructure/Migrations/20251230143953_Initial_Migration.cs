@@ -1,5 +1,4 @@
-﻿using System;
-using Microsoft.EntityFrameworkCore.Migrations;
+﻿using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
@@ -17,7 +16,7 @@ namespace HotelBooking.Infrastructure.Migrations
                 {
                     Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     TripId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    HotelId = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
+                    HotelId = table.Column<string>(type: "uniqueidentifier", nullable: false),
                     HotelName = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
                     CheckIn = table.Column<DateTime>(type: "datetime2(3)", precision: 3, nullable: false),
                     CheckOut = table.Column<DateTime>(type: "datetime2(3)", precision: 3, nullable: false),

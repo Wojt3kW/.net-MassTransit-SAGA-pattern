@@ -3,7 +3,7 @@ namespace HotelBooking.Contracts.Commands;
 public record ReserveHotel(
     Guid CorrelationId,
     Guid TripId,
-    string HotelId,
+    Guid HotelId,
     string HotelName,
     DateTime CheckIn,
     DateTime CheckOut,

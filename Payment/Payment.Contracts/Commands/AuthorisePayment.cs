@@ -1,18 +1,18 @@
 namespace Payment.Contracts.Commands;
 
-// ⚠️ WARNING: FOR EDUCATIONAL PURPOSES ONLY!
-// In production, NEVER transmit full card numbers or CVV through message queues.
-// This violates PCI-DSS compliance. Use payment tokenization instead:
-// 1. API receives card data and immediately tokenizes via payment gateway
-// 2. Only the payment token is published to the message queue
-// 3. Payment service uses the token to capture/refund without seeing card data
+/// <summary>
+/// Command to authorise (block) payment funds for a trip booking.
+/// </summary>
+/// <param name="CorrelationId">Saga correlation identifier.</param>
+/// <param name="TripId">Trip booking identifier.</param>
+/// <param name="CustomerId">Customer identifier.</param>
+/// <param name="PaymentMethodId">Optional specific payment method. If null, uses customer's default.</param>
+/// <param name="Amount">Amount to authorise.</param>
+/// <param name="Currency">Currency code (e.g., "GBP", "USD").</param>
 public record AuthorisePayment(
     Guid CorrelationId,
     Guid TripId,
     Guid CustomerId,
-    string CardNumber,
-    string CardHolderName,
-    string ExpiryDate,
-    string Cvv,
+    Guid? PaymentMethodId,
     decimal Amount,
     string Currency);

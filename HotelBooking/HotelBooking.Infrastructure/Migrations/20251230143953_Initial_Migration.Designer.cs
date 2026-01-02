@@ -73,10 +73,8 @@ namespace HotelBooking.Infrastructure.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
 
-                    b.Property<string>("HotelId")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
+                    b.Property<Guid>("HotelId")
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("HotelName")
                         .IsRequired()

@@ -32,7 +32,7 @@ public class HotelReservationRepository : IHotelReservationRepository
     public async Task<(IReadOnlyList<HotelReservation> Items, int TotalCount)> GetAllAsync(
         Guid? tripId = null,
         HotelReservationStatus? status = null,
-        string? hotelId = null,
+        Guid? hotelId = null,
         int page = 1,
         int pageSize = 10,
         CancellationToken cancellationToken = default)
@@ -45,7 +45,7 @@ public class HotelReservationRepository : IHotelReservationRepository
         if (status.HasValue)
             query = query.Where(r => r.Status == status.Value);
 
-        if (!string.IsNullOrEmpty(hotelId))
+        if (hotelId.HasValue)
             query = query.Where(r => r.HotelId == hotelId);
 
         var totalCount = await query.CountAsync(cancellationToken);

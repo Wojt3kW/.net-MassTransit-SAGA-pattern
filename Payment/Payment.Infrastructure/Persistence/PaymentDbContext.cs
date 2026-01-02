@@ -10,6 +10,7 @@ public class PaymentDbContext : DbContext
     }
 
     public DbSet<PaymentTransaction> PaymentTransactions => Set<PaymentTransaction>();
+    public DbSet<PaymentMethod> PaymentMethods => Set<PaymentMethod>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -32,6 +33,21 @@ public class PaymentDbContext : DbContext
             entity.HasIndex(e => e.TripId);
             entity.HasIndex(e => e.CustomerId);
             entity.HasIndex(e => e.Status);
+        });
+
+        modelBuilder.Entity<PaymentMethod>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Name).HasMaxLength(100).IsRequired();
+            entity.Property(e => e.CardLastFourDigits).HasMaxLength(4).IsRequired();
+            entity.Property(e => e.CardNumber).HasMaxLength(20).IsRequired();
+            entity.Property(e => e.CardHolderName).HasMaxLength(200).IsRequired();
+            entity.Property(e => e.ExpiryDate).HasMaxLength(5).IsRequired();
+            entity.Property(e => e.Cvv).HasMaxLength(4).IsRequired();
+            entity.Property(e => e.CreatedAt).HasPrecision(3);
+
+            entity.HasIndex(e => e.CustomerId);
+            entity.HasIndex(e => new { e.CustomerId, e.IsDefault });
         });
     }
 }

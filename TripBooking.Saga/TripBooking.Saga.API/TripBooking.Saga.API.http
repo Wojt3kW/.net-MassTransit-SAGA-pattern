@@ -1,0 +1,35 @@
+@TripBooking.Saga.API_HostAddress = http://localhost:5130
+
+### Get saga state by trip ID (use trip ID from Trip.API)
+GET {{TripBooking.Saga.API_HostAddress}}/api/sagas/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa
+Accept: application/json
+
+### Get saga state - non-existent (404)
+GET {{TripBooking.Saga.API_HostAddress}}/api/sagas/00000000-0000-0000-0000-000000000000
+Accept: application/json
+
+### List all sagas (first page)
+GET {{TripBooking.Saga.API_HostAddress}}/api/sagas?page=1&pageSize=10
+Accept: application/json
+
+### List sagas filtered by state
+GET {{TripBooking.Saga.API_HostAddress}}/api/sagas?state=Completed&page=1&pageSize=10
+Accept: application/json
+
+### List sagas filtered by customer ID
+GET {{TripBooking.Saga.API_HostAddress}}/api/sagas?customerId=c1111111-1111-1111-1111-111111111111&page=1&pageSize=10
+Accept: application/json
+
+### List sagas filtered by state and customer
+GET {{TripBooking.Saga.API_HostAddress}}/api/sagas?state=AwaitingPaymentAuthorisation&customerId=c1111111-1111-1111-1111-111111111111&page=1&pageSize=5
+Accept: application/json
+
+### Health check
+GET {{TripBooking.Saga.API_HostAddress}}/health
+Accept: application/json
+
+### Liveness check
+GET {{TripBooking.Saga.API_HostAddress}}/alive
+Accept: application/json
+
+###

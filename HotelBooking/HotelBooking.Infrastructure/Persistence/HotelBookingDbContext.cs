@@ -16,7 +16,6 @@ public class HotelBookingDbContext : DbContext
         modelBuilder.Entity<HotelReservation>(entity =>
         {
             entity.HasKey(e => e.Id);
-            entity.Property(e => e.HotelId).HasMaxLength(50).IsRequired();
             entity.Property(e => e.HotelName).HasMaxLength(200).IsRequired();
             entity.Property(e => e.GuestName).HasMaxLength(200).IsRequired();
             entity.Property(e => e.GuestEmail).HasMaxLength(256).IsRequired();
@@ -31,7 +30,7 @@ public class HotelBookingDbContext : DbContext
             entity.Property(e => e.ConfirmedAt).HasPrecision(3);
             entity.Property(e => e.CancelledAt).HasPrecision(3);
             entity.Property(e => e.ExpiresAt).HasPrecision(3);
-            
+
             entity.HasIndex(e => e.TripId);
             entity.HasIndex(e => e.HotelId);
             entity.HasIndex(e => e.Status);

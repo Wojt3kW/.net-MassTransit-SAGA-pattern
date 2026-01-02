@@ -16,6 +16,9 @@ rabbitPassword.WithParentRelationship(rabbitMq);
 builder.AddProject<Projects.Trip_API>("trip-api")
     .WaitFor(rabbitMq);
 
+builder.AddProject<Projects.TripBooking_Saga_API>("tripbooking-saga-api")
+    .WaitFor(rabbitMq);
+
 builder.AddProject<Projects.FlightBooking_API>("flightbooking-api")
     .WaitFor(rabbitMq);
 

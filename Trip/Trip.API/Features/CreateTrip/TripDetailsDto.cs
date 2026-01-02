@@ -6,4 +6,5 @@ public record TripDetailsDto(
     HotelDetailsDto Hotel,
     GroundTransportDetailsDto? GroundTransport,
     bool IncludeInsurance,
+    Guid? PaymentMethodId,
     PaymentDetailsDto Payment);

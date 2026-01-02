@@ -1,5 +1,6 @@
 namespace FlightBooking.Contracts.Events;
 
+/// <summary>Published when the return flight has been successfully reserved.</summary>
 public record ReturnFlightReserved(
     Guid CorrelationId,
     Guid TripId,

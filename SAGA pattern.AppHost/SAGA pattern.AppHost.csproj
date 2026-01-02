@@ -24,6 +24,7 @@
     <ProjectReference Include="..\Insurance\Insurance.API\Insurance.API.csproj" />
     <ProjectReference Include="..\Notification\Notification.API\Notification.API.csproj" />
     <ProjectReference Include="..\Payment\Payment.API\Payment.API.csproj" />
+    <ProjectReference Include="..\TripBooking.Saga\TripBooking.Saga.API\TripBooking.Saga.API.csproj" />
     <ProjectReference Include="..\Trip\Trip.API\Trip.API.csproj" />
   </ItemGroup>
 

@@ -108,6 +108,7 @@ Dependency Direction: Domain ← Application ← Infrastructure ← API
 | Service | Role | Database | Commands |
 |---------|------|----------|----------|
 | **Trip.API** | REST entry point, starts SAGA | TripDb | CreateTrip, GetTrip, CancelTrip |
+| **TripBooking.Saga.API** | SAGA monitoring & management | TripBookingSagaDb | GetSagaState, ListSagas |
 | **FlightBooking.API** | Flight reservations | FlightBookingDb | ReserveOutboundFlight, ReserveReturnFlight, CancelFlight |
 | **HotelBooking.API** | Hotel reservations | HotelBookingDb | ReserveHotel, ConfirmHotel, CancelHotel |
 | **GroundTransport.API** | Ground transport | GroundTransportDb | ReserveGroundTransport, CancelGroundTransport |

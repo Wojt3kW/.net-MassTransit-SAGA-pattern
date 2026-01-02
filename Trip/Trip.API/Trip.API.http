@@ -1,19 +1,46 @@
 @Trip.API_HostAddress = http://localhost:5120
 
-### Create a new trip booking
+### Create a new trip booking (starts SAGA)
 POST {{Trip.API_HostAddress}}/api/trips
 Content-Type: application/json
 
 {
   "customerId": "c1111111-1111-1111-1111-111111111111",
-  "customerEmail": "new.customer@email.com",
-  "tripDetails": {
-    "outboundFlightNumber": "BA100",
-    "returnFlightNumber": "BA101",
-    "hotelId": "HTL-NYC-002",
-    "numberOfGuests": 2,
-    "departureDate": "2025-06-01",
-    "returnDate": "2025-06-08"
+  "customerEmail": "john.smith@email.com",
+  "customerName": "John Smith",
+  "details": {
+    "outboundFlight": {
+      "origin": "LHR",
+      "destination": "JFK",
+      "departureDate": "2026-03-15T10:30:00Z",
+      "flightNumber": "BA178",
+      "carrier": "British Airways"
+    },
+    "returnFlight": {
+      "origin": "JFK",
+      "destination": "LHR",
+      "departureDate": "2026-03-22T18:00:00Z",
+      "flightNumber": "BA179",
+      "carrier": "British Airways"
+    },
+    "hotel": {
+      "hotelId": "HTL-NYC-001",
+      "hotelName": "The Plaza Hotel",
+      "checkIn": "2026-03-15T15:00:00Z",
+      "checkOut": "2026-03-22T11:00:00Z",
+      "numberOfGuests": 2
+    },
+    "groundTransport": null,
+    "includeInsurance": true,
+    "paymentMethodId": "a1111111-1111-1111-1111-111111111111",
+    "payment": {
+      "cardNumber": "4242424242424242",
+      "cardHolderName": "John Smith",
+      "expiryDate": "12/28",
+      "cvv": "123",
+      "amount": 2500.00,
+      "currency": "GBP"
+    }
   }
 }
 

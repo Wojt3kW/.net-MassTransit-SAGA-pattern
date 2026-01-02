@@ -6,7 +6,7 @@ namespace HotelBooking.Contracts.DTOs;
 public record HotelReservationResponse(
     Guid Id,
     Guid TripId,
-    string HotelId,
+    Guid HotelId,
     string HotelName,
     DateTime CheckIn,
     DateTime CheckOut,
