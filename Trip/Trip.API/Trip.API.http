@@ -24,7 +24,7 @@ Content-Type: application/json
       "carrier": "British Airways"
     },
     "hotel": {
-      "hotelId": "HTL-NYC-001",
+      "hotelId": "245bccd2-f5f3-40e3-8dcf-885fec39aaaa",
       "hotelName": "The Plaza Hotel",
       "checkIn": "2026-03-15T15:00:00Z",
       "checkOut": "2026-03-22T11:00:00Z",

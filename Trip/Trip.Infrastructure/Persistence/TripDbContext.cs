@@ -17,6 +17,7 @@ public class TripDbContext : DbContext
         {
             entity.HasKey(e => e.Id);
             entity.Property(e => e.CustomerEmail).HasMaxLength(256).IsRequired();
+            entity.Property(e => e.CustomerName).HasMaxLength(200).IsRequired();
             entity.Property(e => e.Status).HasConversion<string>().HasMaxLength(50);
             entity.Property(e => e.OutboundFlightConfirmation).HasMaxLength(50);
             entity.Property(e => e.ReturnFlightConfirmation).HasMaxLength(50);
@@ -29,7 +30,7 @@ public class TripDbContext : DbContext
             entity.Property(e => e.CreatedAt).HasPrecision(3);
             entity.Property(e => e.CompletedAt).HasPrecision(3);
             entity.Property(e => e.CancelledAt).HasPrecision(3);
-            
+
             entity.HasIndex(e => e.CustomerId);
             entity.HasIndex(e => e.Status);
         });

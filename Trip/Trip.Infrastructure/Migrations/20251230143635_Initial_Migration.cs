@@ -1,5 +1,4 @@
-﻿using System;
-using Microsoft.EntityFrameworkCore.Migrations;
+﻿using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
@@ -18,6 +17,7 @@ namespace Trip.Infrastructure.Migrations
                     Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     CustomerId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     CustomerEmail = table.Column<string>(type: "nvarchar(256)", maxLength: 256, nullable: false),
+                    CustomerName = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
                     Status = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
                     OutboundFlightConfirmation = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true),
                     ReturnFlightConfirmation = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true),
