@@ -1,6 +1,10 @@
 @Trip.API_HostAddress = http://localhost:5120
 
-### Create a new trip booking (starts SAGA)
+#######################################################
+# HAPPY PATH
+#######################################################
+
+### Create a new trip booking - HAPPY PATH (starts SAGA)
 POST {{Trip.API_HostAddress}}/api/trips
 Content-Type: application/json
 
@@ -39,6 +43,388 @@ Content-Type: application/json
       "expiryDate": "12/28",
       "cvv": "123",
       "amount": 2500.00,
+      "currency": "GBP"
+    }
+  }
+}
+
+#######################################################
+# FAILURE SCENARIOS - COMPENSATION TESTS
+#######################################################
+
+### FAIL: OutboundFlightReservationFailed (flightNumber contains "FAIL")
+# Compensation: ReleasePayment
+POST {{Trip.API_HostAddress}}/api/trips
+Content-Type: application/json
+
+{
+  "customerId": "c1111111-1111-1111-1111-111111111111",
+  "customerEmail": "john.smith@email.com",
+  "customerName": "John Smith",
+  "details": {
+    "outboundFlight": {
+      "origin": "LHR",
+      "destination": "JFK",
+      "departureDate": "2026-03-15T10:30:00Z",
+      "flightNumber": "FAIL",
+      "carrier": "British Airways"
+    },
+    "returnFlight": {
+      "origin": "JFK",
+      "destination": "LHR",
+      "departureDate": "2026-03-22T18:00:00Z",
+      "flightNumber": "BA179",
+      "carrier": "British Airways"
+    },
+    "hotel": {
+      "hotelId": "245bccd2-f5f3-40e3-8dcf-885fec39aaaa",
+      "hotelName": "The Plaza Hotel",
+      "checkIn": "2026-03-15T15:00:00Z",
+      "checkOut": "2026-03-22T11:00:00Z",
+      "numberOfGuests": 2
+    },
+    "groundTransport": null,
+    "includeInsurance": true,
+    "paymentMethodId": "a1111111-1111-1111-1111-111111111111",
+    "payment": {
+      "cardNumber": "4242424242424242",
+      "cardHolderName": "John Smith",
+      "expiryDate": "12/28",
+      "cvv": "123",
+      "amount": 2500.00,
+      "currency": "GBP"
+    }
+  }
+}
+
+### FAIL: ReturnFlightReservationFailed (flightNumber contains "FAIL")
+# Compensation: CancelOutboundFlight → ReleasePayment
+POST {{Trip.API_HostAddress}}/api/trips
+Content-Type: application/json
+
+{
+  "customerId": "c1111111-1111-1111-1111-111111111111",
+  "customerEmail": "john.smith@email.com",
+  "customerName": "John Smith",
+  "details": {
+    "outboundFlight": {
+      "origin": "LHR",
+      "destination": "JFK",
+      "departureDate": "2026-03-15T10:30:00Z",
+      "flightNumber": "BA178",
+      "carrier": "British Airways"
+    },
+    "returnFlight": {
+      "origin": "JFK",
+      "destination": "LHR",
+      "departureDate": "2026-03-22T18:00:00Z",
+      "flightNumber": "FAIL",
+      "carrier": "British Airways"
+    },
+    "hotel": {
+      "hotelId": "245bccd2-f5f3-40e3-8dcf-885fec39aaaa",
+      "hotelName": "The Plaza Hotel",
+      "checkIn": "2026-03-15T15:00:00Z",
+      "checkOut": "2026-03-22T11:00:00Z",
+      "numberOfGuests": 2
+    },
+    "groundTransport": null,
+    "includeInsurance": true,
+    "paymentMethodId": "a1111111-1111-1111-1111-111111111111",
+    "payment": {
+      "cardNumber": "4242424242424242",
+      "cardHolderName": "John Smith",
+      "expiryDate": "12/28",
+      "cvv": "123",
+      "amount": 2500.00,
+      "currency": "GBP"
+    }
+  }
+}
+
+### FAIL: PaymentAuthorisationFailed (amount=0.01)
+# No compensation needed - SAGA fails immediately
+POST {{Trip.API_HostAddress}}/api/trips
+Content-Type: application/json
+
+{
+  "customerId": "c1111111-1111-1111-1111-111111111111",
+  "customerEmail": "john.smith@email.com",
+  "customerName": "John Smith",
+  "details": {
+    "outboundFlight": {
+      "origin": "LHR",
+      "destination": "JFK",
+      "departureDate": "2026-03-15T10:30:00Z",
+      "flightNumber": "BA178",
+      "carrier": "British Airways"
+    },
+    "returnFlight": {
+      "origin": "JFK",
+      "destination": "LHR",
+      "departureDate": "2026-03-22T18:00:00Z",
+      "flightNumber": "BA179",
+      "carrier": "British Airways"
+    },
+    "hotel": {
+      "hotelId": "245bccd2-f5f3-40e3-8dcf-885fec39aaaa",
+      "hotelName": "The Plaza Hotel",
+      "checkIn": "2026-03-15T15:00:00Z",
+      "checkOut": "2026-03-22T11:00:00Z",
+      "numberOfGuests": 2
+    },
+    "groundTransport": null,
+    "includeInsurance": false,
+    "paymentMethodId": "a1111111-1111-1111-1111-111111111111",
+    "payment": {
+      "cardNumber": "4242424242424242",
+      "cardHolderName": "John Smith",
+      "expiryDate": "12/28",
+      "cvv": "123",
+      "amount": 0.01,
+      "currency": "GBP"
+    }
+  }
+}
+
+### FAIL: HotelReservationFailed (hotelName contains "FAIL")
+# Compensation: CancelReturnFlight → CancelOutboundFlight → ReleasePayment
+POST {{Trip.API_HostAddress}}/api/trips
+Content-Type: application/json
+
+{
+  "customerId": "c1111111-1111-1111-1111-111111111111",
+  "customerEmail": "john.smith@email.com",
+  "customerName": "John Smith",
+  "details": {
+    "outboundFlight": {
+      "origin": "LHR",
+      "destination": "JFK",
+      "departureDate": "2026-03-15T10:30:00Z",
+      "flightNumber": "BA178",
+      "carrier": "British Airways"
+    },
+    "returnFlight": {
+      "origin": "JFK",
+      "destination": "LHR",
+      "departureDate": "2026-03-22T18:00:00Z",
+      "flightNumber": "BA179",
+      "carrier": "British Airways"
+    },
+    "hotel": {
+      "hotelId": "245bccd2-f5f3-40e3-8dcf-885fec39aaaa",
+      "hotelName": "FAIL Hotel",
+      "checkIn": "2026-03-15T15:00:00Z",
+      "checkOut": "2026-03-22T11:00:00Z",
+      "numberOfGuests": 2
+    },
+    "groundTransport": null,
+    "includeInsurance": false,
+    "paymentMethodId": "a1111111-1111-1111-1111-111111111111",
+    "payment": {
+      "cardNumber": "4242424242424242",
+      "cardHolderName": "John Smith",
+      "expiryDate": "12/28",
+      "cvv": "123",
+      "amount": 2500.00,
+      "currency": "GBP"
+    }
+  }
+}
+
+### FAIL: GroundTransportReservationFailed (type contains "FAIL")
+# Compensation: CancelHotel → CancelReturnFlight → CancelOutboundFlight → ReleasePayment
+POST {{Trip.API_HostAddress}}/api/trips
+Content-Type: application/json
+
+{
+  "customerId": "c1111111-1111-1111-1111-111111111111",
+  "customerEmail": "john.smith@email.com",
+  "customerName": "John Smith",
+  "details": {
+    "outboundFlight": {
+      "origin": "LHR",
+      "destination": "JFK",
+      "departureDate": "2026-03-15T10:30:00Z",
+      "flightNumber": "BA178",
+      "carrier": "British Airways"
+    },
+    "returnFlight": {
+      "origin": "JFK",
+      "destination": "LHR",
+      "departureDate": "2026-03-22T18:00:00Z",
+      "flightNumber": "BA179",
+      "carrier": "British Airways"
+    },
+    "hotel": {
+      "hotelId": "245bccd2-f5f3-40e3-8dcf-885fec39aaaa",
+      "hotelName": "The Plaza Hotel",
+      "checkIn": "2026-03-15T15:00:00Z",
+      "checkOut": "2026-03-22T11:00:00Z",
+      "numberOfGuests": 2
+    },
+    "groundTransport": {
+      "type": "FAIL",
+      "pickupLocation": "JFK Airport",
+      "dropoffLocation": "The Plaza Hotel",
+      "pickupDate": "2026-03-15T11:00:00Z",
+      "passengerCount": 2
+    },
+    "includeInsurance": false,
+    "paymentMethodId": "a1111111-1111-1111-1111-111111111111",
+    "payment": {
+      "cardNumber": "4242424242424242",
+      "cardHolderName": "John Smith",
+      "expiryDate": "12/28",
+      "cvv": "123",
+      "amount": 2500.00,
+      "currency": "GBP"
+    }
+  }
+}
+
+### FAIL: InsuranceIssueFailed (customerName contains "FAIL")
+# Compensation: CancelGroundTransport → CancelHotel → CancelReturnFlight → CancelOutboundFlight → ReleasePayment
+POST {{Trip.API_HostAddress}}/api/trips
+Content-Type: application/json
+
+{
+  "customerId": "c1111111-1111-1111-1111-111111111111",
+  "customerEmail": "john.smith@email.com",
+  "customerName": "FAIL Smith",
+  "details": {
+    "outboundFlight": {
+      "origin": "LHR",
+      "destination": "JFK",
+      "departureDate": "2026-03-15T10:30:00Z",
+      "flightNumber": "BA178",
+      "carrier": "British Airways"
+    },
+    "returnFlight": {
+      "origin": "JFK",
+      "destination": "LHR",
+      "departureDate": "2026-03-22T18:00:00Z",
+      "flightNumber": "BA179",
+      "carrier": "British Airways"
+    },
+    "hotel": {
+      "hotelId": "245bccd2-f5f3-40e3-8dcf-885fec39aaaa",
+      "hotelName": "The Plaza Hotel",
+      "checkIn": "2026-03-15T15:00:00Z",
+      "checkOut": "2026-03-22T11:00:00Z",
+      "numberOfGuests": 2
+    },
+    "groundTransport": {
+      "type": "AirportTransfer",
+      "pickupLocation": "JFK Airport",
+      "dropoffLocation": "The Plaza Hotel",
+      "pickupDate": "2026-03-15T11:00:00Z",
+      "passengerCount": 2
+    },
+    "includeInsurance": true,
+    "paymentMethodId": "a1111111-1111-1111-1111-111111111111",
+    "payment": {
+      "cardNumber": "4242424242424242",
+      "cardHolderName": "John Smith",
+      "expiryDate": "12/28",
+      "cvv": "123",
+      "amount": 2500.00,
+      "currency": "GBP"
+    }
+  }
+}
+
+### FAIL: InsuranceIssueFailed WITHOUT GroundTransport (customerName contains "FAIL")
+# Compensation: CancelHotel → CancelReturnFlight → CancelOutboundFlight → ReleasePayment
+POST {{Trip.API_HostAddress}}/api/trips
+Content-Type: application/json
+
+{
+  "customerId": "c1111111-1111-1111-1111-111111111111",
+  "customerEmail": "john.smith@email.com",
+  "customerName": "FAIL Smith",
+  "details": {
+    "outboundFlight": {
+      "origin": "LHR",
+      "destination": "JFK",
+      "departureDate": "2026-03-15T10:30:00Z",
+      "flightNumber": "BA178",
+      "carrier": "British Airways"
+    },
+    "returnFlight": {
+      "origin": "JFK",
+      "destination": "LHR",
+      "departureDate": "2026-03-22T18:00:00Z",
+      "flightNumber": "BA179",
+      "carrier": "British Airways"
+    },
+    "hotel": {
+      "hotelId": "245bccd2-f5f3-40e3-8dcf-885fec39aaaa",
+      "hotelName": "The Plaza Hotel",
+      "checkIn": "2026-03-15T15:00:00Z",
+      "checkOut": "2026-03-22T11:00:00Z",
+      "numberOfGuests": 2
+    },
+    "groundTransport": null,
+    "includeInsurance": true,
+    "paymentMethodId": "a1111111-1111-1111-1111-111111111111",
+    "payment": {
+      "cardNumber": "4242424242424242",
+      "cardHolderName": "John Smith",
+      "expiryDate": "12/28",
+      "cvv": "123",
+      "amount": 2500.00,
+      "currency": "GBP"
+    }
+  }
+}
+
+### FAIL: PaymentCaptureFailed (amount=999.99) - with retry logic
+# Compensation: CancelInsurance → CancelGroundTransport → CancelHotel → CancelReturnFlight → CancelOutboundFlight → ReleasePayment
+POST {{Trip.API_HostAddress}}/api/trips
+Content-Type: application/json
+
+{
+  "customerId": "c1111111-1111-1111-1111-111111111111",
+  "customerEmail": "john.smith@email.com",
+  "customerName": "John Smith",
+  "details": {
+    "outboundFlight": {
+      "origin": "LHR",
+      "destination": "JFK",
+      "departureDate": "2026-03-15T10:30:00Z",
+      "flightNumber": "BA178",
+      "carrier": "British Airways"
+    },
+    "returnFlight": {
+      "origin": "JFK",
+      "destination": "LHR",
+      "departureDate": "2026-03-22T18:00:00Z",
+      "flightNumber": "BA179",
+      "carrier": "British Airways"
+    },
+    "hotel": {
+      "hotelId": "245bccd2-f5f3-40e3-8dcf-885fec39aaaa",
+      "hotelName": "The Plaza Hotel",
+      "checkIn": "2026-03-15T15:00:00Z",
+      "checkOut": "2026-03-22T11:00:00Z",
+      "numberOfGuests": 2
+    },
+    "groundTransport": {
+      "type": "AirportTransfer",
+      "pickupLocation": "JFK Airport",
+      "dropoffLocation": "The Plaza Hotel",
+      "pickupDate": "2026-03-15T11:00:00Z",
+      "passengerCount": 2
+    },
+    "includeInsurance": true,
+    "paymentMethodId": "a1111111-1111-1111-1111-111111111111",
+    "payment": {
+      "cardNumber": "4242424242424242",
+      "cardHolderName": "John Smith",
+      "expiryDate": "12/28",
+      "cvv": "123",
+      "amount": 999.99,
       "currency": "GBP"
     }
   }

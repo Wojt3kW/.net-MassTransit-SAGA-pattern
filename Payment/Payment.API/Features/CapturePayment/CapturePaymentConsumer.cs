@@ -22,6 +22,17 @@ public class CapturePaymentConsumer : IConsumer<CapturePaymentCommand>
     {
         var command = context.Message;
 
+        // SIMULATION: If amount is 999.99 - simulate capture failure
+        if (command.Amount == 999.99m)
+        {
+            await context.Publish(new PaymentCaptureFailed(
+                command.CorrelationId,
+                command.TripId,
+                command.PaymentAuthorisationId,
+                "Simulated: Insufficient funds for capture"));
+            return;
+        }
+
         var transaction = await _repository.GetByIdAsync(command.PaymentAuthorisationId, context.CancellationToken);
 
         if (transaction is null || transaction.Status != PaymentStatus.Authorised)

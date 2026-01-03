@@ -1,6 +1,6 @@
 using Insurance.Application.Abstractions;
-using Insurance.Domain.Entities;
 using Insurance.Contracts.Events;
+using Insurance.Domain.Entities;
 using MassTransit;
 using CancelInsuranceCommand = Insurance.Contracts.Commands.CancelInsurance;
 
@@ -24,11 +24,13 @@ public class CancelInsuranceConsumer : IConsumer<CancelInsuranceCommand>
 
         var policy = await _repository.GetByIdAsync(command.InsurancePolicyId, context.CancellationToken);
 
+        var utcNow = DateTime.UtcNow;
+
         if (policy is not null)
         {
             policy.Status = InsurancePolicyStatus.Cancelled;
             policy.CancellationReason = command.Reason;
-            policy.CancelledAt = DateTime.UtcNow;
+            policy.CancelledAt = utcNow;
 
             await _repository.UpdateAsync(policy, context.CancellationToken);
         }
@@ -37,6 +39,7 @@ public class CancelInsuranceConsumer : IConsumer<CancelInsuranceCommand>
             command.CorrelationId,
             command.TripId,
             command.InsurancePolicyId,
-            DateTime.UtcNow));
+            utcNow,
+            command.Reason));
     }
 }

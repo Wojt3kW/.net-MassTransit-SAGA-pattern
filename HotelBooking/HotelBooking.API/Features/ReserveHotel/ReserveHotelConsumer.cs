@@ -23,6 +23,16 @@ public class ReserveHotelConsumer : IConsumer<ReserveHotelCommand>
     {
         var command = context.Message;
 
+        // SIMULATION: If hotel name contains "FAIL" - simulate reservation failure
+        if (command.HotelName.Contains("FAIL"))
+        {
+            await context.Publish(new HotelReservationFailed(
+                command.CorrelationId,
+                command.TripId,
+                $"Simulated: No rooms available at {command.HotelName}"));
+            return;
+        }
+
         var nights = (command.CheckOut - command.CheckIn).Days;
 
         var reservation = new HotelReservation

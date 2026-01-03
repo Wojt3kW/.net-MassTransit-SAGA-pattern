@@ -1,6 +1,6 @@
 using GroundTransport.Application.Abstractions;
-using GroundTransport.Domain.Entities;
 using GroundTransport.Contracts.Events;
+using GroundTransport.Domain.Entities;
 using MassTransit;
 using CancelGroundTransportCommand = GroundTransport.Contracts.Commands.CancelGroundTransport;
 
@@ -24,11 +24,13 @@ public class CancelGroundTransportConsumer : IConsumer<CancelGroundTransportComm
 
         var reservation = await _repository.GetByIdAsync(command.TransportReservationId, context.CancellationToken);
 
+        var utcNow = DateTime.UtcNow;
+
         if (reservation is not null)
         {
             reservation.Status = TransportReservationStatus.Cancelled;
             reservation.CancellationReason = command.Reason;
-            reservation.CancelledAt = DateTime.UtcNow;
+            reservation.CancelledAt = utcNow;
 
             await _repository.UpdateAsync(reservation, context.CancellationToken);
         }
@@ -37,6 +39,7 @@ public class CancelGroundTransportConsumer : IConsumer<CancelGroundTransportComm
             command.CorrelationId,
             command.TripId,
             command.TransportReservationId,
-            DateTime.UtcNow));
+            utcNow,
+            command.Reason));
     }
 }

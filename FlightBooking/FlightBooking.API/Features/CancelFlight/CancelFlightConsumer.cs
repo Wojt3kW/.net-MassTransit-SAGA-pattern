@@ -1,6 +1,6 @@
 using FlightBooking.Application.Abstractions;
-using FlightBooking.Domain.Entities;
 using FlightBooking.Contracts.Events;
+using FlightBooking.Domain.Entities;
 using MassTransit;
 using CancelFlightCommand = FlightBooking.Contracts.Commands.CancelFlight;
 
@@ -24,11 +24,13 @@ public class CancelFlightConsumer : IConsumer<CancelFlightCommand>
 
         var reservation = await _repository.GetByIdAsync(command.FlightReservationId, context.CancellationToken);
 
+        var utcNow = DateTime.UtcNow;
+
         if (reservation is not null)
         {
             reservation.Status = ReservationStatus.Cancelled;
             reservation.CancellationReason = command.Reason;
-            reservation.CancelledAt = DateTime.UtcNow;
+            reservation.CancelledAt = utcNow;
 
             await _repository.UpdateAsync(reservation, context.CancellationToken);
         }
@@ -37,6 +39,7 @@ public class CancelFlightConsumer : IConsumer<CancelFlightCommand>
             command.CorrelationId,
             command.TripId,
             command.FlightReservationId,
-            DateTime.UtcNow));
+            utcNow,
+            command.Reason));
     }
 }

@@ -22,6 +22,16 @@ public class ReserveGroundTransportConsumer : IConsumer<ReserveGroundTransportCo
     {
         var command = context.Message;
 
+        // SIMULATION: If type contains "FAIL" - simulate reservation failure
+        if (command.Type.Contains("FAIL"))
+        {
+            await context.Publish(new GroundTransportReservationFailed(
+                command.CorrelationId,
+                command.TripId,
+                "Simulated: No vehicles available"));
+            return;
+        }
+
         var transportType = command.Type.ToLower() switch
         {
             "airporttransfer" => TransportType.AirportTransfer,

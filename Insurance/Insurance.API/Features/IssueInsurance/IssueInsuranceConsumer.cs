@@ -22,6 +22,16 @@ public class IssueInsuranceConsumer : IConsumer<IssueInsuranceCommand>
     {
         var command = context.Message;
 
+        // SIMULATION: If customer name contains "FAIL" - simulate insurance failure
+        if (command.CustomerName.Contains("FAIL"))
+        {
+            await context.Publish(new InsuranceIssueFailed(
+                command.CorrelationId,
+                command.TripId,
+                "Simulated: Customer not eligible for insurance"));
+            return;
+        }
+
         var premium = CalculatePremium(command.TripTotalValue);
 
         var policy = new InsurancePolicy

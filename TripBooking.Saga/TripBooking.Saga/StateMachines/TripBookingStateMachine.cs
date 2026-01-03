@@ -221,7 +221,17 @@ public class TripBookingStateMachine : MassTransitStateMachine<TripBookingSagaSt
                     DepartureDate: context.Saga.DepartureDate,
                     FlightNumber: context.Saga.OutboundFlightNumber,
                     Carrier: context.Saga.OutboundCarrier,
-                    PassengerCount: context.Saga.NumberOfGuests))
+                    PassengerCount: context.Saga.NumberOfGuests)),
+            When(PaymentAuthorisationFailed)
+                .Then(context =>
+                {
+                    context.Saga.IsPaymentAuthorised = false;
+                })
+                .TransitionTo(Failed)
+                .Publish(context => new TripBookingFailed(
+                    TripId: context.Saga.TripId,
+                    Reason: context.Message.Reason,
+                    FailedAt: DateTime.UtcNow))
         );
 
         During(AwaitingOutboundFlight,
@@ -240,7 +250,30 @@ public class TripBookingStateMachine : MassTransitStateMachine<TripBookingSagaSt
                     DepartureDate: context.Saga.ReturnDate,
                     FlightNumber: context.Saga.ReturnFlightNumber,
                     Carrier: context.Saga.ReturnCarrier,
-                    PassengerCount: context.Saga.NumberOfGuests))
+                    PassengerCount: context.Saga.NumberOfGuests)),
+            When(FlightReservationFailed)
+                .Then(context =>
+                {
+                    context.Saga.IsOutboundFlightReserved = false;
+                })
+                .TransitionTo(ReleasingPayment)
+                .Publish(context => new ReleasePayment(
+                    CorrelationId: context.Saga.CorrelationId,
+                    TripId: context.Saga.TripId,
+                    PaymentAuthorisationId: context.Saga.PaymentTransactionId!.Value,
+                    Reason: context.Message.Reason))
+        );
+
+        // Compensation: Outbound flight cancelled - release payment
+        During(CompensatingOutboundFlight,
+            When(FlightCancelled)
+                .Then(context => context.Saga.IsOutboundFlightReserved = false)
+                .TransitionTo(ReleasingPayment)
+                .Publish(context => new ReleasePayment(
+                    CorrelationId: context.Saga.CorrelationId,
+                    TripId: context.Saga.TripId,
+                    PaymentAuthorisationId: context.Saga.PaymentTransactionId!.Value,
+                    Reason: context.Message.Reason))
         );
 
         During(AwaitingReturnFlight,
@@ -260,7 +293,30 @@ public class TripBookingStateMachine : MassTransitStateMachine<TripBookingSagaSt
                     CheckOut: context.Saga.CheckOut,
                     NumberOfGuests: context.Saga.NumberOfGuests,
                     GuestName: context.Saga.CustomerName,
-                    GuestEmail: context.Saga.CustomerEmail))
+                    GuestEmail: context.Saga.CustomerEmail)),
+            When(FlightReservationFailed)
+                .Then(context =>
+                {
+                    context.Saga.IsReturnFlightReserved = false;
+                })
+                .TransitionTo(CompensatingOutboundFlight)
+                .Publish(context => new CancelFlight(
+                    CorrelationId: context.Saga.CorrelationId,
+                    TripId: context.Saga.TripId,
+                    FlightReservationId: context.Saga.OutboundFlightId!.Value,
+                    Reason: context.Message.Reason))
+        );
+
+        // Compensation: Return flight cancelled - continue to outbound flight
+        During(CompensatingReturnFlight,
+            When(FlightCancelled)
+                .Then(context => context.Saga.IsReturnFlightReserved = false)
+                .TransitionTo(CompensatingOutboundFlight)
+                .Publish(context => new CancelFlight(
+                    CorrelationId: context.Saga.CorrelationId,
+                    TripId: context.Saga.TripId,
+                    FlightReservationId: context.Saga.OutboundFlightId!.Value,
+                    Reason: context.Message.Reason))
         );
 
         During(AwaitingHotel,
@@ -274,18 +330,54 @@ public class TripBookingStateMachine : MassTransitStateMachine<TripBookingSagaSt
                 .Publish(context => new ConfirmHotel(
                     CorrelationId: context.Saga.CorrelationId,
                     TripId: context.Saga.TripId,
-                    HotelReservationId: context.Saga.HotelReservationId!.Value))
+                    HotelReservationId: context.Saga.HotelReservationId!.Value)),
+            When(HotelReservationFailed)
+                .Then(context =>
+                {
+                    context.Saga.IsHotelReserved = false;
+                })
+                .TransitionTo(CompensatingReturnFlight)
+                .Publish(context => new CancelFlight(
+                    CorrelationId: context.Saga.CorrelationId,
+                    TripId: context.Saga.TripId,
+                    FlightReservationId: context.Saga.ReturnFlightId!.Value,
+                    Reason: context.Message.Reason))
         );
 
         During(AwaitingHotelConfirmation,
-            When(HotelConfirmed)
+            When(HotelConfirmationExpired)
                 .Then(context =>
                 {
-                    context.Saga.IsHotelConfirmed = true;
+                    context.Saga.IsHotelReserved = false;
                 })
+                .TransitionTo(CompensatingHotel)
+                .Publish(context => new CancelHotel(
+                    CorrelationId: context.Saga.CorrelationId,
+                    TripId: context.Saga.TripId,
+                    HotelReservationId: context.Saga.HotelReservationId!.Value,
+                    Reason: "Hotel confirmation expired"))
+        );
+
+        // Compensation: Hotel cancelled - continue to return flight
+        During(CompensatingHotel,
+            When(HotelCancelled)
+                .Then(context => context.Saga.IsHotelReserved = false)
+                .TransitionTo(CompensatingReturnFlight)
+                .Publish(context => new CancelFlight(
+                    CorrelationId: context.Saga.CorrelationId,
+                    TripId: context.Saga.TripId,
+                    FlightReservationId: context.Saga.ReturnFlightId!.Value,
+                    Reason: context.Message.Reason))
+        );
+
+        // Hotel confirmed - branch to optional services or payment capture
+        During(AwaitingHotelConfirmation,
+            When(HotelConfirmed)
+                .Then(context => context.Saga.IsHotelConfirmed = true)
                 .IfElse(
                     context => context.Saga.IncludeGroundTransport,
-                    thenBinder => thenBinder
+                    // Branch: GroundTransport included
+                    withTransport => withTransport
                         .TransitionTo(AwaitingGroundTransport)
                         .Publish(context => new ReserveGroundTransport(
                             CorrelationId: context.Saga.CorrelationId,
@@ -295,32 +387,35 @@ public class TripBookingStateMachine : MassTransitStateMachine<TripBookingSagaSt
                             DropoffLocation: context.Saga.GroundTransportDropoffLocation!,
                             PickupDate: context.Saga.DepartureDate,
                             PassengerCount: context.Saga.NumberOfGuests)),
-                    elseBinder => elseBinder
-                        .IfElse(
-                            context => context.Saga.IncludeInsurance,
-                            insuranceBinder => insuranceBinder
-                                .TransitionTo(AwaitingInsurance)
-                                .Publish(context => new IssueInsurance(
-                                    CorrelationId: context.Saga.CorrelationId,
-                                    TripId: context.Saga.TripId,
-                                    CustomerId: context.Saga.CustomerId,
-                                    CustomerName: context.Saga.CustomerName,
-                                    CustomerEmail: context.Saga.CustomerEmail,
-                                    OutboundFlightReservationId: context.Saga.OutboundFlightId!.Value,
-                                    ReturnFlightReservationId: context.Saga.ReturnFlightId!.Value,
-                                    HotelReservationId: context.Saga.HotelReservationId!.Value,
-                                    CoverageStartDate: context.Saga.DepartureDate,
-                                    CoverageEndDate: context.Saga.ReturnDate,
-                                    TripTotalValue: context.Saga.TotalAmount)),
-                            skipInsuranceBinder => skipInsuranceBinder
-                                .TransitionTo(AwaitingPaymentCapture)
-                                .Publish(context => new CapturePayment(
-                                    CorrelationId: context.Saga.CorrelationId,
-                                    TripId: context.Saga.TripId,
-                                    PaymentAuthorisationId: context.Saga.PaymentTransactionId!.Value,
-                                    Amount: context.Saga.TotalAmount))))
+                    // Branch: No GroundTransport
+                    noTransport => noTransport.IfElse(
+                        context => context.Saga.IncludeInsurance,
+                        // Sub-branch: Insurance included
+                        withInsurance => withInsurance
+                            .TransitionTo(AwaitingInsurance)
+                            .Publish(context => new IssueInsurance(
+                                CorrelationId: context.Saga.CorrelationId,
+                                TripId: context.Saga.TripId,
+                                CustomerId: context.Saga.CustomerId,
+                                CustomerName: context.Saga.CustomerName,
+                                CustomerEmail: context.Saga.CustomerEmail,
+                                OutboundFlightReservationId: context.Saga.OutboundFlightId!.Value,
+                                ReturnFlightReservationId: context.Saga.ReturnFlightId!.Value,
+                                HotelReservationId: context.Saga.HotelReservationId!.Value,
+                                CoverageStartDate: context.Saga.DepartureDate,
+                                CoverageEndDate: context.Saga.ReturnDate,
+                                TripTotalValue: context.Saga.TotalAmount)),
+                        // Sub-branch: No Insurance - go directly to payment
+                        noInsurance => noInsurance
+                            .TransitionTo(AwaitingPaymentCapture)
+                            .Publish(context => new CapturePayment(
+                                CorrelationId: context.Saga.CorrelationId,
+                                TripId: context.Saga.TripId,
+                                PaymentAuthorisationId: context.Saga.PaymentTransactionId!.Value,
+                                Amount: context.Saga.TotalAmount))))
         );
 
+        // Ground transport reserved - branch to insurance or payment capture
         During(AwaitingGroundTransport,
             When(GroundTransportReserved)
                 .Then(context =>
@@ -330,7 +425,8 @@ public class TripBookingStateMachine : MassTransitStateMachine<TripBookingSagaSt
                 })
                 .IfElse(
                     context => context.Saga.IncludeInsurance,
-                    thenBinder => thenBinder
+                    // Branch: Insurance included
+                    withInsurance => withInsurance
                         .TransitionTo(AwaitingInsurance)
                         .Publish(context => new IssueInsurance(
                             CorrelationId: context.Saga.CorrelationId,
@@ -344,15 +440,39 @@ public class TripBookingStateMachine : MassTransitStateMachine<TripBookingSagaSt
                             CoverageStartDate: context.Saga.DepartureDate,
                             CoverageEndDate: context.Saga.ReturnDate,
                             TripTotalValue: context.Saga.TotalAmount)),
-                    elseBinder => elseBinder
+                    // Branch: No Insurance - go directly to payment
+                    noInsurance => noInsurance
                         .TransitionTo(AwaitingPaymentCapture)
                         .Publish(context => new CapturePayment(
                             CorrelationId: context.Saga.CorrelationId,
                             TripId: context.Saga.TripId,
                             PaymentAuthorisationId: context.Saga.PaymentTransactionId!.Value,
-                            Amount: context.Saga.TotalAmount)))
+                            Amount: context.Saga.TotalAmount))),
+
+            // Failure: compensate hotel
+            When(GroundTransportReservationFailed)
+                .Then(context => context.Saga.IsGroundTransportReserved = false)
+                .TransitionTo(CompensatingHotel)
+                .Publish(context => new CancelHotel(
+                    CorrelationId: context.Saga.CorrelationId,
+                    TripId: context.Saga.TripId,
+                    HotelReservationId: context.Saga.HotelReservationId!.Value,
+                    Reason: context.Message.Reason))
         );
 
+        // Compensation: GroundTransport cancelled - continue to hotel
+        During(CompensatingGroundTransport,
+            When(GroundTransportCancelled)
+                .Then(context => context.Saga.IsGroundTransportReserved = false)
+                .TransitionTo(CompensatingHotel)
+                .Publish(context => new CancelHotel(
+                    CorrelationId: context.Saga.CorrelationId,
+                    TripId: context.Saga.TripId,
+                    HotelReservationId: context.Saga.HotelReservationId!.Value,
+                    Reason: context.Message.Reason))
+        );
+
+        // Insurance issued - go to payment capture
         During(AwaitingInsurance,
             When(InsuranceIssued)
                 .Then(context =>
@@ -365,10 +485,57 @@ public class TripBookingStateMachine : MassTransitStateMachine<TripBookingSagaSt
                     CorrelationId: context.Saga.CorrelationId,
                     TripId: context.Saga.TripId,
                     PaymentAuthorisationId: context.Saga.PaymentTransactionId!.Value,
-                    Amount: context.Saga.TotalAmount))
+                    Amount: context.Saga.TotalAmount)),
+
+            // Failure: compensate based on what was booked
+            When(InsuranceIssueFailed)
+                .Then(context => context.Saga.IsInsuranceIssued = false)
+                .IfElse(
+                    context => context.Saga.IncludeGroundTransport,
+                    // Branch: Had GroundTransport - cancel it first
+                    withTransport => withTransport
+                        .TransitionTo(CompensatingGroundTransport)
+                        .Publish(context => new CancelGroundTransport(
+                            CorrelationId: context.Saga.CorrelationId,
+                            TripId: context.Saga.TripId,
+                            TransportReservationId: context.Saga.GroundTransportId!.Value,
+                            Reason: context.Message.Reason)),
+                    // Branch: No GroundTransport - cancel hotel directly
+                    noTransport => noTransport
+                        .TransitionTo(CompensatingHotel)
+                        .Publish(context => new CancelHotel(
+                            CorrelationId: context.Saga.CorrelationId,
+                            TripId: context.Saga.TripId,
+                            HotelReservationId: context.Saga.HotelReservationId!.Value,
+                            Reason: context.Message.Reason)))
+        );
+
+        // Compensation: Insurance cancelled - continue compensation chain
+        During(CompensatingInsurance,
+            When(InsuranceCancelled)
+                .Then(context => context.Saga.IsInsuranceIssued = false)
+                .IfElse(
+                    context => context.Saga.IncludeGroundTransport,
+                    // Branch: Had GroundTransport - cancel it
+                    withTransport => withTransport
+                        .TransitionTo(CompensatingGroundTransport)
+                        .Publish(context => new CancelGroundTransport(
+                            CorrelationId: context.Saga.CorrelationId,
+                            TripId: context.Saga.TripId,
+                            TransportReservationId: context.Saga.GroundTransportId!.Value,
+                            Reason: context.Message.Reason)),
+                    // Branch: No GroundTransport - cancel hotel directly
+                    noTransport => noTransport
+                        .TransitionTo(CompensatingHotel)
+                        .Publish(context => new CancelHotel(
+                            CorrelationId: context.Saga.CorrelationId,
+                            TripId: context.Saga.TripId,
+                            HotelReservationId: context.Saga.HotelReservationId!.Value,
+                            Reason: context.Message.Reason)))
         );
 
 
+        // Payment capture - final step before completion
         During(AwaitingPaymentCapture,
             When(PaymentCaptured)
                 .Then(context =>
@@ -379,12 +546,72 @@ public class TripBookingStateMachine : MassTransitStateMachine<TripBookingSagaSt
                 .TransitionTo(Completed)
                 .Publish(context => new TripBookingCompleted(
                     TripId: context.Saga.TripId,
-                    CompletedAt: DateTime.UtcNow))
+                    CompletedAt: DateTime.UtcNow)),
+
+            // Failure: retry up to 3 times, then compensate
+            When(PaymentCaptureFailed)
+                .Then(context => context.Saga.PaymentCaptureRetryCount++)
+                .IfElse(
+                    context => context.Saga.PaymentCaptureRetryCount < 3,
+                    // Retry: attempt payment capture again
+                    retry => retry
+                        .TransitionTo(AwaitingPaymentCapture)
+                        .Publish(context => new CapturePayment(
+                            CorrelationId: context.Saga.CorrelationId,
+                            TripId: context.Saga.TripId,
+                            PaymentAuthorisationId: context.Saga.PaymentTransactionId!.Value,
+                            Amount: context.Saga.TotalAmount)),
+                    // Exhausted retries: start compensation chain
+                    exhausted => exhausted.IfElse(
+                        context => context.Saga.IncludeInsurance,
+                        // Branch: Had Insurance - cancel it first
+                        withInsurance => withInsurance
+                            .TransitionTo(CompensatingInsurance)
+                            .Publish(context => new CancelInsurance(
+                                CorrelationId: context.Saga.CorrelationId,
+                                TripId: context.Saga.TripId,
+                                InsurancePolicyId: context.Saga.InsurancePolicyId!.Value,
+                                Reason: context.Message.Reason)),
+                        // Branch: No Insurance
+                        noInsurance => noInsurance.IfElse(
+                            context => context.Saga.IncludeGroundTransport,
+                            // Sub-branch: Had GroundTransport - cancel it
+                            withTransport => withTransport
+                                .TransitionTo(CompensatingGroundTransport)
+                                .Publish(context => new CancelGroundTransport(
+                                    CorrelationId: context.Saga.CorrelationId,
+                                    TripId: context.Saga.TripId,
+                                    TransportReservationId: context.Saga.GroundTransportId!.Value,
+                                    Reason: context.Message.Reason)),
+                            // Sub-branch: No GroundTransport - cancel hotel directly
+                            noTransport => noTransport
+                                .TransitionTo(CompensatingHotel)
+                                .Publish(context => new CancelHotel(
+                                    CorrelationId: context.Saga.CorrelationId,
+                                    TripId: context.Saga.TripId,
+                                    HotelReservationId: context.Saga.HotelReservationId!.Value,
+                                    Reason: context.Message.Reason)))))
+        );
+
+
+        // Final compensation step: Payment released - transition to Failed
+        During(ReleasingPayment,
+            When(PaymentReleased)
+                .Then(context => context.Saga.PaymentTransactionId = context.Message.PaymentAuthorisationId)
+                .TransitionTo(Failed)
+                .Publish(context => new TripBookingFailed(
+                    TripId: context.Saga.TripId,
+                    Reason: context.Message.Reason,
+                    FailedAt: DateTime.UtcNow))
         );
 
         // Ignore events that should not trigger any action in terminal states
         During(Completed,
             Ignore(TripBookingCompleted),
+            Ignore(TripBookingFailed),
+            Ignore(TripBookingCancelled));
+
+        During(Failed,
             Ignore(TripBookingFailed),
             Ignore(TripBookingCancelled));
     }

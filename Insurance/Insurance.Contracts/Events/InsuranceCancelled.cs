@@ -5,4 +5,5 @@ public record InsuranceCancelled(
     Guid CorrelationId,
     Guid TripId,
     Guid InsurancePolicyId,
-    DateTime CancelledAt);
+    DateTime CancelledAt,
+    string Reason);

@@ -26,6 +26,16 @@ public class AuthorisePaymentConsumer : IConsumer<AuthorisePaymentCommand>
     {
         var command = context.Message;
 
+        // SIMULATION: If amount is 0.01 - simulate authorisation failure
+        if (command.Amount == 0.01m)
+        {
+            await context.Publish(new PaymentAuthorisationFailed(
+                command.CorrelationId,
+                command.TripId,
+                "Simulated: Card declined by issuer"));
+            return;
+        }
+
         // Get payment method - either by ID or customer's default
         var paymentMethod = command.PaymentMethodId.HasValue
             ? await _paymentMethodRepository.GetByIdAsync(command.PaymentMethodId.Value, context.CancellationToken)

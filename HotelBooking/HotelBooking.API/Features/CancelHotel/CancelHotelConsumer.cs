@@ -1,6 +1,6 @@
 using HotelBooking.Application.Abstractions;
-using HotelBooking.Domain.Entities;
 using HotelBooking.Contracts.Events;
+using HotelBooking.Domain.Entities;
 using MassTransit;
 using CancelHotelCommand = HotelBooking.Contracts.Commands.CancelHotel;
 
@@ -24,11 +24,13 @@ public class CancelHotelConsumer : IConsumer<CancelHotelCommand>
 
         var reservation = await _repository.GetByIdAsync(command.HotelReservationId, context.CancellationToken);
 
+        var utcNow = DateTime.UtcNow;
+
         if (reservation is not null)
         {
             reservation.Status = HotelReservationStatus.Cancelled;
             reservation.CancellationReason = command.Reason;
-            reservation.CancelledAt = DateTime.UtcNow;
+            reservation.CancelledAt = utcNow;
 
             await _repository.UpdateAsync(reservation, context.CancellationToken);
         }
@@ -37,6 +39,7 @@ public class CancelHotelConsumer : IConsumer<CancelHotelCommand>
             command.CorrelationId,
             command.TripId,
             command.HotelReservationId,
-            DateTime.UtcNow));
+            utcNow,
+            command.Reason));
     }
 }

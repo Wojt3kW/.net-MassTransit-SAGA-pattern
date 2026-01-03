@@ -97,13 +97,13 @@ SAGA pattern.sln
 
 ```
 ┌─────────────────────────────────────────────┐
-│                   API                        │  ← Presentation (Endpoints, Consumers)
+│                   API                       │  ← Presentation (Endpoints, Consumers)
 ├─────────────────────────────────────────────┤
-│              Infrastructure                  │  ← Persistence (DbContext, Repositories)
+│              Infrastructure                 │  ← Persistence (DbContext, Repositories)
 ├─────────────────────────────────────────────┤
-│               Application                    │  ← Use Cases (Repository Interfaces)
+│               Application                   │  ← Use Cases (Repository Interfaces)
 ├─────────────────────────────────────────────┤
-│                 Domain                       │  ← Entities (Zero Dependencies)
+│                 Domain                      │  ← Entities (Zero Dependencies)
 └─────────────────────────────────────────────┘
 
 Dependency Direction: Domain ← Application ← Infrastructure ← API
@@ -141,8 +141,17 @@ dotnet run --project "SAGA pattern.AppHost"
 2. ✅ Set up .NET Aspire orchestration
 3. ✅ Implement Clean Architecture layers
 4. ✅ **Implement SAGA State Machine** - Happy path completed!
-5. 🎯 Handle timeouts and compensations
-6. 🎯 Implement Inbox/Outbox patterns
+5. ✅ **Handle compensations** - All failure scenarios with retry!
+6. ✅ **Failure simulation** - Test triggers in all consumers!
+7. 🎯 Implement timeouts (Quartz scheduler)
+8. 🎯 Implement User Cancellation flow
+9. 🎯 Implement Inbox/Outbox patterns
+
+## Testing
+
+See `Trip/Trip.API/Trip.API.http` for all test requests including failure simulation.
+
+See `SAGA-FLOWS.md` for detailed failure triggers and compensation flows.
 
 ## References
 

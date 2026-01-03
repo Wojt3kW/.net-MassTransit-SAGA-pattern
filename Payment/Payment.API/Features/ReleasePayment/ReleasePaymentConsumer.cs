@@ -1,7 +1,7 @@
 using MassTransit;
 using Payment.Application.Abstractions;
-using Payment.Domain.Entities;
 using Payment.Contracts.Events;
+using Payment.Domain.Entities;
 using ReleasePaymentCommand = Payment.Contracts.Commands.ReleasePayment;
 
 namespace Payment.API.Features.ReleasePayment;
@@ -24,10 +24,12 @@ public class ReleasePaymentConsumer : IConsumer<ReleasePaymentCommand>
 
         var transaction = await _repository.GetByIdAsync(command.PaymentAuthorisationId, context.CancellationToken);
 
+        var utcNow = DateTime.UtcNow;
+
         if (transaction is not null && transaction.Status == PaymentStatus.Authorised)
         {
             transaction.Status = PaymentStatus.Released;
-            transaction.ReleasedAt = DateTime.UtcNow;
+            transaction.ReleasedAt = utcNow;
             transaction.FailureReason = command.Reason;
             await _repository.UpdateAsync(transaction, context.CancellationToken);
         }
@@ -36,6 +38,7 @@ public class ReleasePaymentConsumer : IConsumer<ReleasePaymentCommand>
             command.CorrelationId,
             command.TripId,
             command.PaymentAuthorisationId,
-            DateTime.UtcNow));
+            utcNow,
+            command.Reason));
     }
 }

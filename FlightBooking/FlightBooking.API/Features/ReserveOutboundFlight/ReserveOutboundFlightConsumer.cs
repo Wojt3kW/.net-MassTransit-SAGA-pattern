@@ -1,6 +1,6 @@
 using FlightBooking.Application.Abstractions;
-using FlightBooking.Domain.Entities;
 using FlightBooking.Contracts.Events;
+using FlightBooking.Domain.Entities;
 using MassTransit;
 using ReserveOutboundFlightCommand = FlightBooking.Contracts.Commands.ReserveOutboundFlight;
 
@@ -21,6 +21,17 @@ public class ReserveOutboundFlightConsumer : IConsumer<ReserveOutboundFlightComm
     public async Task Consume(ConsumeContext<ReserveOutboundFlightCommand> context)
     {
         var command = context.Message;
+
+        // SIMULATION: If the flight number contains "FAIL" - simulate an error (before saving)
+        if (command.FlightNumber.Contains("FAIL"))
+        {
+            await context.Publish(new FlightReservationFailed(
+                CorrelationId: command.CorrelationId,
+                TripId: command.TripId,
+                FlightNumber: command.FlightNumber,
+                Reason: "Simulated: Outbound flight unavailable"));
+            return;
+        }
 
         // Simulate flight reservation (in real scenario, call external airline API)
         var reservation = new FlightReservation
@@ -54,6 +65,6 @@ public class ReserveOutboundFlightConsumer : IConsumer<ReserveOutboundFlightComm
     }
 
     private static string GenerateConfirmationCode() => $"FL-{Guid.NewGuid().ToString()[..8].ToUpper()}";
-    
+
     private static decimal CalculatePrice(ReserveOutboundFlightCommand command) => 250.00m * command.PassengerCount;
 }

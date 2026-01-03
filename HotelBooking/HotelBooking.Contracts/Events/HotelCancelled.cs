@@ -5,4 +5,5 @@ public record HotelCancelled(
     Guid CorrelationId,
     Guid TripId,
     Guid HotelReservationId,
-    DateTime CancelledAt);
+    DateTime CancelledAt,
+    string Reason);

@@ -5,4 +5,5 @@ public record PaymentReleased(
     Guid CorrelationId,
     Guid TripId,
     Guid PaymentAuthorisationId,
-    DateTime ReleasedAt);
+    DateTime ReleasedAt,
+    string Reason);

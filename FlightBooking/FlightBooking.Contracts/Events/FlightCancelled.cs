@@ -5,4 +5,5 @@ public record FlightCancelled(
     Guid CorrelationId,
     Guid TripId,
     Guid FlightReservationId,
-    DateTime CancelledAt);
+    DateTime CancelledAt,
+    string Reason);

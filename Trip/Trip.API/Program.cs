@@ -2,7 +2,6 @@ using FluentValidation;
 using MassTransit;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
-using Trip.API.Consumers;
 using Trip.API.Features;
 using Trip.API.Features.CreateTrip;
 using Trip.Application.Abstractions;
@@ -32,13 +31,8 @@ builder.Services.AddMassTransit(x =>
 {
     x.SetKebabCaseEndpointNameFormatter();
 
-    // Register consumers
-    x.AddConsumer<OutboundFlightReservedConsumer>();
-    x.AddConsumer<ReturnFlightReservedConsumer>();
-    x.AddConsumer<HotelReservedConsumer>();
-    x.AddConsumer<InsuranceIssuedConsumer>();
-    x.AddConsumer<PaymentCapturedConsumer>();
-    x.AddConsumer<TripBookingCompletedConsumer>();
+    // Register all consumers from this assembly
+    x.AddConsumers(typeof(Program).Assembly);
 
     x.UsingRabbitMq((context, cfg) =>
     {
@@ -63,7 +57,7 @@ if (app.Environment.IsDevelopment())
     {
         options.SwaggerEndpoint("/openapi/v1.json", "Trip API");
     });
-    
+
     // Redirect root to Swagger UI
     app.MapGet("/", () => Results.Redirect("/swagger")).ExcludeFromDescription();
 }
