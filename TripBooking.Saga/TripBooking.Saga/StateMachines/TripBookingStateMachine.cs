@@ -381,5 +381,11 @@ public class TripBookingStateMachine : MassTransitStateMachine<TripBookingSagaSt
                     TripId: context.Saga.TripId,
                     CompletedAt: DateTime.UtcNow))
         );
+
+        // Ignore events that should not trigger any action in terminal states
+        During(Completed,
+            Ignore(TripBookingCompleted),
+            Ignore(TripBookingFailed),
+            Ignore(TripBookingCancelled));
     }
 }

@@ -28,6 +28,10 @@
     <ProjectReference Include="..\Trip.Contracts\Trip.Contracts.csproj" />
     <ProjectReference Include="..\Trip.Application\Trip.Application.csproj" />
     <ProjectReference Include="..\Trip.Infrastructure\Trip.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\FlightBooking\FlightBooking.Contracts\FlightBooking.Contracts.csproj" />
+    <ProjectReference Include="..\..\HotelBooking\HotelBooking.Contracts\HotelBooking.Contracts.csproj" />
+    <ProjectReference Include="..\..\Insurance\Insurance.Contracts\Insurance.Contracts.csproj" />
+    <ProjectReference Include="..\..\Payment\Payment.Contracts\Payment.Contracts.csproj" />
   </ItemGroup>
 
 </Project>

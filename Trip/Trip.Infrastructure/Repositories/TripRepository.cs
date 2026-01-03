@@ -27,16 +27,53 @@ public class TripRepository : ITripRepository
         return tripBooking;
     }
 
-    public async Task UpdateAsync(TripBooking tripBooking, CancellationToken cancellationToken = default)
+    public async Task<bool> UpdateOutboundFlightConfirmationAsync(Guid tripId, string confirmationCode, CancellationToken cancellationToken = default)
     {
-        _dbContext.TripBookings.Update(tripBooking);
-        await _dbContext.SaveChangesAsync(cancellationToken);
+        var rowsAffected = await _dbContext.TripBookings
+            .Where(t => t.Id == tripId)
+            .ExecuteUpdateAsync(s => s.SetProperty(t => t.OutboundFlightConfirmation, confirmationCode), cancellationToken);
+        return rowsAffected > 0;
     }
 
-    public async Task<IReadOnlyList<TripBooking>> GetByCustomerIdAsync(Guid customerId, CancellationToken cancellationToken = default)
+    public async Task<bool> UpdateReturnFlightConfirmationAsync(Guid tripId, string confirmationCode, CancellationToken cancellationToken = default)
     {
-        return await _dbContext.TripBookings
-            .Where(t => t.CustomerId == customerId)
-            .ToListAsync(cancellationToken);
+        var rowsAffected = await _dbContext.TripBookings
+            .Where(t => t.Id == tripId)
+            .ExecuteUpdateAsync(s => s.SetProperty(t => t.ReturnFlightConfirmation, confirmationCode), cancellationToken);
+        return rowsAffected > 0;
+    }
+
+    public async Task<bool> UpdateHotelConfirmationAsync(Guid tripId, string confirmationCode, CancellationToken cancellationToken = default)
+    {
+        var rowsAffected = await _dbContext.TripBookings
+            .Where(t => t.Id == tripId)
+            .ExecuteUpdateAsync(s => s.SetProperty(t => t.HotelConfirmation, confirmationCode), cancellationToken);
+        return rowsAffected > 0;
+    }
+
+    public async Task<bool> UpdateInsurancePolicyNumberAsync(Guid tripId, string policyNumber, CancellationToken cancellationToken = default)
+    {
+        var rowsAffected = await _dbContext.TripBookings
+            .Where(t => t.Id == tripId)
+            .ExecuteUpdateAsync(s => s.SetProperty(t => t.InsurancePolicyNumber, policyNumber), cancellationToken);
+        return rowsAffected > 0;
+    }
+
+    public async Task<bool> UpdatePaymentConfirmationAsync(Guid tripId, string confirmationCode, CancellationToken cancellationToken = default)
+    {
+        var rowsAffected = await _dbContext.TripBookings
+            .Where(t => t.Id == tripId)
+            .ExecuteUpdateAsync(s => s.SetProperty(t => t.PaymentConfirmation, confirmationCode), cancellationToken);
+        return rowsAffected > 0;
+    }
+
+    public async Task<bool> UpdateStatusAsync(Guid tripId, TripStatus status, DateTime? completedAt = null, CancellationToken cancellationToken = default)
+    {
+        var rowsAffected = await _dbContext.TripBookings
+            .Where(t => t.Id == tripId)
+            .ExecuteUpdateAsync(s => s
+                .SetProperty(t => t.Status, status)
+                .SetProperty(t => t.CompletedAt, completedAt), cancellationToken);
+        return rowsAffected > 0;
     }
 }

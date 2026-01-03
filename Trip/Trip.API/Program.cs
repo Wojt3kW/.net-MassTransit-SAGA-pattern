@@ -2,6 +2,7 @@ using FluentValidation;
 using MassTransit;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using Trip.API.Consumers;
 using Trip.API.Features;
 using Trip.API.Features.CreateTrip;
 using Trip.Application.Abstractions;
@@ -30,6 +31,14 @@ builder.Services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationBeh
 builder.Services.AddMassTransit(x =>
 {
     x.SetKebabCaseEndpointNameFormatter();
+
+    // Register consumers
+    x.AddConsumer<OutboundFlightReservedConsumer>();
+    x.AddConsumer<ReturnFlightReservedConsumer>();
+    x.AddConsumer<HotelReservedConsumer>();
+    x.AddConsumer<InsuranceIssuedConsumer>();
+    x.AddConsumer<PaymentCapturedConsumer>();
+    x.AddConsumer<TripBookingCompletedConsumer>();
 
     x.UsingRabbitMq((context, cfg) =>
     {

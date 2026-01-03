@@ -107,6 +107,13 @@ SAGA pattern.sln
 │   │   │   ├── IEndpoint.cs
 │   │   │   ├── EndpointExtensions.cs
 │   │   │   └── ValidationBehavior.cs
+│   │   ├── Consumers/                 # Event consumers updating TripBookings
+│   │   │   ├── OutboundFlightReservedConsumer.cs
+│   │   │   ├── ReturnFlightReservedConsumer.cs
+│   │   │   ├── HotelReservedConsumer.cs
+│   │   │   ├── InsuranceIssuedConsumer.cs
+│   │   │   ├── PaymentCapturedConsumer.cs
+│   │   │   └── TripBookingCompletedConsumer.cs
 │   │   └── Program.cs
 │   └── Trip.Contracts/                # Shared DTOs, Commands, Events
 │       ├── Commands/
@@ -121,7 +128,15 @@ SAGA pattern.sln
 │           ├── TripBookingResponse.cs
 │           └── TripBookingStatusResponse.cs
 │
-├── TripBooking.Saga/                  # SAGA State Machine orchestrator (for you to implement)
+├── TripBooking.Saga/
+│   ├── TripBooking.Saga/              # SAGA State Machine library
+│   │   ├── StateMachines/
+│   │   │   └── TripBookingStateMachine.cs
+│   │   ├── States/
+│   │   │   └── TripBookingSagaState.cs
+│   │   └── Persistence/
+│   │       └── TripBookingSagaDbContext.cs
+│   └── TripBooking.Saga.API/          # SAGA host & monitoring endpoints
 │
 ├── FlightBooking/
 │   ├── FlightBooking.Domain/
@@ -532,36 +547,14 @@ public class TripBooking
 - **Do NOT use `#region`** - Regions hide code and make navigation harder
 - Use blank lines and comments to separate logical sections instead
 - Keep classes focused and small - if you need regions, the class is likely too large
-
-### Null Checking
+- **Always use braces `{}`** for `if`, `else`, `for`, `foreach`, `while`, `do`, `using`, etc.
 - **Prefer `is null`** over `== null` for null checks
 - **Prefer `is not null`** over `!= null` for non-null checks
 - Pattern matching is more readable and avoids operator overloading issues
-
-```csharp
-// ✅ Good - Pattern matching
-if (trip is null) return null;
-if (reservation is not null) { ... }
-
-// ❌ Avoid - Equality operators
-if (trip == null) return null;
-if (reservation != null) { ... }
-```
-
-### DateTime Handling
 - **Always use `DateTime.UtcNow`** - Never use `DateTime.Now` to avoid timezone issues
 - **Store all timestamps in UTC** - Convert to local time only for display
 - **Use `datetime2(3)` precision** - Millisecond precision is sufficient for most use cases
 - Configure precision in DbContext using `.HasPrecision(3)`
-
-```csharp
-// ✅ Good - UTC timestamps
-CreatedAt = DateTime.UtcNow;
-entity.Property(e => e.CreatedAt).HasPrecision(3);  // datetime2(3) in SQL Server
-
-// ❌ Avoid - Local time
-CreatedAt = DateTime.Now;
-```
 
 ### Project Structure (Clean Architecture + Vertical Slice + REPR Pattern)
 
