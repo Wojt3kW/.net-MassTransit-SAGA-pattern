@@ -1,35 +1,36 @@
+using Insurance.Application.Abstractions;
 using Insurance.Domain.Entities;
-using Insurance.Infrastructure.Persistence;
 using Insurance.Contracts.Events;
 using MassTransit;
-using Microsoft.EntityFrameworkCore;
 using CancelInsuranceCommand = Insurance.Contracts.Commands.CancelInsurance;
 
 namespace Insurance.API.Features.CancelInsurance;
 
+/// <summary>
+/// Consumer that handles insurance policy cancellation commands.
+/// </summary>
 public class CancelInsuranceConsumer : IConsumer<CancelInsuranceCommand>
 {
-    private readonly InsuranceDbContext _dbContext;
+    private readonly IInsurancePolicyRepository _repository;
 
-    public CancelInsuranceConsumer(InsuranceDbContext dbContext)
+    public CancelInsuranceConsumer(IInsurancePolicyRepository repository)
     {
-        _dbContext = dbContext;
+        _repository = repository;
     }
 
     public async Task Consume(ConsumeContext<CancelInsuranceCommand> context)
     {
         var command = context.Message;
 
-        var policy = await _dbContext.InsurancePolicies
-            .FirstOrDefaultAsync(x => x.Id == command.InsurancePolicyId);
+        var policy = await _repository.GetByIdAsync(command.InsurancePolicyId, context.CancellationToken);
 
         if (policy is not null)
         {
             policy.Status = InsurancePolicyStatus.Cancelled;
             policy.CancellationReason = command.Reason;
             policy.CancelledAt = DateTime.UtcNow;
-            
-            await _dbContext.SaveChangesAsync();
+
+            await _repository.UpdateAsync(policy, context.CancellationToken);
         }
 
         await context.Publish(new InsuranceCancelled(

@@ -1,34 +1,35 @@
 using MassTransit;
-using Microsoft.EntityFrameworkCore;
+using Payment.Application.Abstractions;
 using Payment.Domain.Entities;
-using Payment.Infrastructure.Persistence;
 using Payment.Contracts.Events;
 using RefundPaymentCommand = Payment.Contracts.Commands.RefundPayment;
 
 namespace Payment.API.Features.RefundPayment;
 
+/// <summary>
+/// Consumer that handles payment refund commands.
+/// </summary>
 public class RefundPaymentConsumer : IConsumer<RefundPaymentCommand>
 {
-    private readonly PaymentDbContext _dbContext;
+    private readonly IPaymentTransactionRepository _repository;
 
-    public RefundPaymentConsumer(PaymentDbContext dbContext)
+    public RefundPaymentConsumer(IPaymentTransactionRepository repository)
     {
-        _dbContext = dbContext;
+        _repository = repository;
     }
 
     public async Task Consume(ConsumeContext<RefundPaymentCommand> context)
     {
         var command = context.Message;
 
-        var transaction = await _dbContext.PaymentTransactions
-            .FirstOrDefaultAsync(x => x.Id == command.PaymentId);
+        var transaction = await _repository.GetByIdAsync(command.PaymentId, context.CancellationToken);
 
         if (transaction is not null && transaction.Status == PaymentStatus.Captured)
         {
             transaction.Status = PaymentStatus.Refunded;
             transaction.RefundedAt = DateTime.UtcNow;
             transaction.FailureReason = command.Reason;
-            await _dbContext.SaveChangesAsync();
+            await _repository.UpdateAsync(transaction, context.CancellationToken);
         }
 
         await context.Publish(new PaymentRefunded(

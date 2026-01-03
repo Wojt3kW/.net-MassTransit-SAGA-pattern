@@ -1,19 +1,22 @@
 using MassTransit;
+using Notification.Application.Abstractions;
 using Notification.Domain.Entities;
-using Notification.Infrastructure.Persistence;
 using Notification.Contracts.Commands;
 using Notification.Contracts.Events;
 
 namespace Notification.API.Features.SendBookingFailure;
 
+/// <summary>
+/// Consumer that handles booking failure notification commands.
+/// </summary>
 public class SendBookingFailureConsumer : IConsumer<SendBookingFailureNotification>
 {
-    private readonly NotificationDbContext _dbContext;
+    private readonly INotificationRepository _repository;
     private readonly ILogger<SendBookingFailureConsumer> _logger;
 
-    public SendBookingFailureConsumer(NotificationDbContext dbContext, ILogger<SendBookingFailureConsumer> logger)
+    public SendBookingFailureConsumer(INotificationRepository repository, ILogger<SendBookingFailureConsumer> logger)
     {
-        _dbContext = dbContext;
+        _repository = repository;
         _logger = logger;
     }
 
@@ -46,8 +49,7 @@ public class SendBookingFailureConsumer : IConsumer<SendBookingFailureNotificati
             SentAt = DateTime.UtcNow
         };
 
-        _dbContext.Notifications.Add(notification);
-        await _dbContext.SaveChangesAsync();
+        await _repository.AddAsync(notification, context.CancellationToken);
 
         _logger.LogInformation("Booking failure notification sent to {Email} for trip {TripId}", 
             command.CustomerEmail, command.TripId);

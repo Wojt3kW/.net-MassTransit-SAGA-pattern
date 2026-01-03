@@ -1,27 +1,28 @@
+using HotelBooking.Application.Abstractions;
 using HotelBooking.Domain.Entities;
-using HotelBooking.Infrastructure.Persistence;
 using HotelBooking.Contracts.Events;
 using MassTransit;
-using Microsoft.EntityFrameworkCore;
 using ConfirmHotelCommand = HotelBooking.Contracts.Commands.ConfirmHotel;
 
 namespace HotelBooking.API.Features.ConfirmHotel;
 
+/// <summary>
+/// Consumer that handles hotel confirmation commands.
+/// </summary>
 public class ConfirmHotelConsumer : IConsumer<ConfirmHotelCommand>
 {
-    private readonly HotelBookingDbContext _dbContext;
+    private readonly IHotelReservationRepository _repository;
 
-    public ConfirmHotelConsumer(HotelBookingDbContext dbContext)
+    public ConfirmHotelConsumer(IHotelReservationRepository repository)
     {
-        _dbContext = dbContext;
+        _repository = repository;
     }
 
     public async Task Consume(ConsumeContext<ConfirmHotelCommand> context)
     {
         var command = context.Message;
 
-        var reservation = await _dbContext.HotelReservations
-            .FirstOrDefaultAsync(x => x.Id == command.HotelReservationId);
+        var reservation = await _repository.GetByIdAsync(command.HotelReservationId, context.CancellationToken);
 
         if (reservation is null || reservation.Status != HotelReservationStatus.Reserved)
         {
@@ -35,8 +36,8 @@ public class ConfirmHotelConsumer : IConsumer<ConfirmHotelCommand>
         if (reservation.ExpiresAt.HasValue && reservation.ExpiresAt < DateTime.UtcNow)
         {
             reservation.Status = HotelReservationStatus.Expired;
-            await _dbContext.SaveChangesAsync();
-            
+            await _repository.UpdateAsync(reservation, context.CancellationToken);
+
             await context.Publish(new HotelConfirmationExpired(
                 command.CorrelationId,
                 command.TripId,
@@ -46,7 +47,7 @@ public class ConfirmHotelConsumer : IConsumer<ConfirmHotelCommand>
 
         reservation.Status = HotelReservationStatus.Confirmed;
         reservation.ConfirmedAt = DateTime.UtcNow;
-        await _dbContext.SaveChangesAsync();
+        await _repository.UpdateAsync(reservation, context.CancellationToken);
 
         await context.Publish(new HotelConfirmed(
             command.CorrelationId,

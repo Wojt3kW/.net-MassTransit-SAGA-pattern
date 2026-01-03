@@ -1,27 +1,28 @@
 using MassTransit;
-using Microsoft.EntityFrameworkCore;
+using Payment.Application.Abstractions;
 using Payment.Domain.Entities;
-using Payment.Infrastructure.Persistence;
 using Payment.Contracts.Events;
 using CapturePaymentCommand = Payment.Contracts.Commands.CapturePayment;
 
 namespace Payment.API.Features.CapturePayment;
 
+/// <summary>
+/// Consumer that handles payment capture commands.
+/// </summary>
 public class CapturePaymentConsumer : IConsumer<CapturePaymentCommand>
 {
-    private readonly PaymentDbContext _dbContext;
+    private readonly IPaymentTransactionRepository _repository;
 
-    public CapturePaymentConsumer(PaymentDbContext dbContext)
+    public CapturePaymentConsumer(IPaymentTransactionRepository repository)
     {
-        _dbContext = dbContext;
+        _repository = repository;
     }
 
     public async Task Consume(ConsumeContext<CapturePaymentCommand> context)
     {
         var command = context.Message;
 
-        var transaction = await _dbContext.PaymentTransactions
-            .FirstOrDefaultAsync(x => x.Id == command.PaymentAuthorisationId);
+        var transaction = await _repository.GetByIdAsync(command.PaymentAuthorisationId, context.CancellationToken);
 
         if (transaction is null || transaction.Status != PaymentStatus.Authorised)
         {
@@ -35,7 +36,7 @@ public class CapturePaymentConsumer : IConsumer<CapturePaymentCommand>
 
         transaction.Status = PaymentStatus.Captured;
         transaction.CapturedAt = DateTime.UtcNow;
-        await _dbContext.SaveChangesAsync();
+        await _repository.UpdateAsync(transaction, context.CancellationToken);
 
         await context.Publish(new PaymentCaptured(
             command.CorrelationId,

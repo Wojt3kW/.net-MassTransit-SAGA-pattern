@@ -1,18 +1,21 @@
+using FlightBooking.Application.Abstractions;
 using FlightBooking.Domain.Entities;
-using FlightBooking.Infrastructure.Persistence;
 using FlightBooking.Contracts.Events;
 using MassTransit;
 using ReserveReturnFlightCommand = FlightBooking.Contracts.Commands.ReserveReturnFlight;
 
 namespace FlightBooking.API.Features.ReserveReturnFlight;
 
+/// <summary>
+/// Consumer that handles return flight reservation commands.
+/// </summary>
 public class ReserveReturnFlightConsumer : IConsumer<ReserveReturnFlightCommand>
 {
-    private readonly FlightBookingDbContext _dbContext;
+    private readonly IFlightReservationRepository _repository;
 
-    public ReserveReturnFlightConsumer(FlightBookingDbContext dbContext)
+    public ReserveReturnFlightConsumer(IFlightReservationRepository repository)
     {
-        _dbContext = dbContext;
+        _repository = repository;
     }
 
     public async Task Consume(ConsumeContext<ReserveReturnFlightCommand> context)
@@ -37,8 +40,7 @@ public class ReserveReturnFlightConsumer : IConsumer<ReserveReturnFlightCommand>
             ConfirmedAt = DateTime.UtcNow
         };
 
-        _dbContext.FlightReservations.Add(reservation);
-        await _dbContext.SaveChangesAsync();
+        await _repository.AddAsync(reservation, context.CancellationToken);
 
         await context.Publish(new ReturnFlightReserved(
             command.CorrelationId,

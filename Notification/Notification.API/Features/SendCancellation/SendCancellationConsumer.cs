@@ -1,19 +1,22 @@
 using MassTransit;
+using Notification.Application.Abstractions;
 using Notification.Domain.Entities;
-using Notification.Infrastructure.Persistence;
 using Notification.Contracts.Commands;
 using Notification.Contracts.Events;
 
 namespace Notification.API.Features.SendCancellation;
 
+/// <summary>
+/// Consumer that handles cancellation notification commands.
+/// </summary>
 public class SendCancellationConsumer : IConsumer<SendCancellationNotification>
 {
-    private readonly NotificationDbContext _dbContext;
+    private readonly INotificationRepository _repository;
     private readonly ILogger<SendCancellationConsumer> _logger;
 
-    public SendCancellationConsumer(NotificationDbContext dbContext, ILogger<SendCancellationConsumer> logger)
+    public SendCancellationConsumer(INotificationRepository repository, ILogger<SendCancellationConsumer> logger)
     {
-        _dbContext = dbContext;
+        _repository = repository;
         _logger = logger;
     }
 
@@ -46,8 +49,7 @@ public class SendCancellationConsumer : IConsumer<SendCancellationNotification>
             SentAt = DateTime.UtcNow
         };
 
-        _dbContext.Notifications.Add(notification);
-        await _dbContext.SaveChangesAsync();
+        await _repository.AddAsync(notification, context.CancellationToken);
 
         _logger.LogInformation("Cancellation notification sent to {Email} for trip {TripId}", 
             command.CustomerEmail, command.TripId);

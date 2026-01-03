@@ -1,35 +1,36 @@
+using HotelBooking.Application.Abstractions;
 using HotelBooking.Domain.Entities;
-using HotelBooking.Infrastructure.Persistence;
 using HotelBooking.Contracts.Events;
 using MassTransit;
-using Microsoft.EntityFrameworkCore;
 using CancelHotelCommand = HotelBooking.Contracts.Commands.CancelHotel;
 
 namespace HotelBooking.API.Features.CancelHotel;
 
+/// <summary>
+/// Consumer that handles hotel cancellation commands.
+/// </summary>
 public class CancelHotelConsumer : IConsumer<CancelHotelCommand>
 {
-    private readonly HotelBookingDbContext _dbContext;
+    private readonly IHotelReservationRepository _repository;
 
-    public CancelHotelConsumer(HotelBookingDbContext dbContext)
+    public CancelHotelConsumer(IHotelReservationRepository repository)
     {
-        _dbContext = dbContext;
+        _repository = repository;
     }
 
     public async Task Consume(ConsumeContext<CancelHotelCommand> context)
     {
         var command = context.Message;
 
-        var reservation = await _dbContext.HotelReservations
-            .FirstOrDefaultAsync(x => x.Id == command.HotelReservationId);
+        var reservation = await _repository.GetByIdAsync(command.HotelReservationId, context.CancellationToken);
 
         if (reservation is not null)
         {
             reservation.Status = HotelReservationStatus.Cancelled;
             reservation.CancellationReason = command.Reason;
             reservation.CancelledAt = DateTime.UtcNow;
-            
-            await _dbContext.SaveChangesAsync();
+
+            await _repository.UpdateAsync(reservation, context.CancellationToken);
         }
 
         await context.Publish(new HotelCancelled(

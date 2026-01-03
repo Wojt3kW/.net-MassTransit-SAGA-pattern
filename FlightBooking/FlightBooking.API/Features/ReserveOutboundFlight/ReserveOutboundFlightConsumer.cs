@@ -1,18 +1,21 @@
+using FlightBooking.Application.Abstractions;
 using FlightBooking.Domain.Entities;
-using FlightBooking.Infrastructure.Persistence;
 using FlightBooking.Contracts.Events;
 using MassTransit;
 using ReserveOutboundFlightCommand = FlightBooking.Contracts.Commands.ReserveOutboundFlight;
 
 namespace FlightBooking.API.Features.ReserveOutboundFlight;
 
+/// <summary>
+/// Consumer that handles outbound flight reservation commands.
+/// </summary>
 public class ReserveOutboundFlightConsumer : IConsumer<ReserveOutboundFlightCommand>
 {
-    private readonly FlightBookingDbContext _dbContext;
+    private readonly IFlightReservationRepository _repository;
 
-    public ReserveOutboundFlightConsumer(FlightBookingDbContext dbContext)
+    public ReserveOutboundFlightConsumer(IFlightReservationRepository repository)
     {
-        _dbContext = dbContext;
+        _repository = repository;
     }
 
     public async Task Consume(ConsumeContext<ReserveOutboundFlightCommand> context)
@@ -38,8 +41,7 @@ public class ReserveOutboundFlightConsumer : IConsumer<ReserveOutboundFlightComm
             ConfirmedAt = DateTime.UtcNow
         };
 
-        _dbContext.FlightReservations.Add(reservation);
-        await _dbContext.SaveChangesAsync();
+        await _repository.AddAsync(reservation, context.CancellationToken);
 
         await context.Publish(new OutboundFlightReserved(
             command.CorrelationId,

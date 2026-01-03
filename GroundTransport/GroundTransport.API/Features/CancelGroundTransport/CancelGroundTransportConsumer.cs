@@ -1,35 +1,36 @@
+using GroundTransport.Application.Abstractions;
 using GroundTransport.Domain.Entities;
-using GroundTransport.Infrastructure.Persistence;
 using GroundTransport.Contracts.Events;
 using MassTransit;
-using Microsoft.EntityFrameworkCore;
 using CancelGroundTransportCommand = GroundTransport.Contracts.Commands.CancelGroundTransport;
 
 namespace GroundTransport.API.Features.CancelGroundTransport;
 
+/// <summary>
+/// Consumer that handles ground transport cancellation commands.
+/// </summary>
 public class CancelGroundTransportConsumer : IConsumer<CancelGroundTransportCommand>
 {
-    private readonly GroundTransportDbContext _dbContext;
+    private readonly ITransportReservationRepository _repository;
 
-    public CancelGroundTransportConsumer(GroundTransportDbContext dbContext)
+    public CancelGroundTransportConsumer(ITransportReservationRepository repository)
     {
-        _dbContext = dbContext;
+        _repository = repository;
     }
 
     public async Task Consume(ConsumeContext<CancelGroundTransportCommand> context)
     {
         var command = context.Message;
 
-        var reservation = await _dbContext.TransportReservations
-            .FirstOrDefaultAsync(x => x.Id == command.TransportReservationId);
+        var reservation = await _repository.GetByIdAsync(command.TransportReservationId, context.CancellationToken);
 
         if (reservation is not null)
         {
             reservation.Status = TransportReservationStatus.Cancelled;
             reservation.CancellationReason = command.Reason;
             reservation.CancelledAt = DateTime.UtcNow;
-            
-            await _dbContext.SaveChangesAsync();
+
+            await _repository.UpdateAsync(reservation, context.CancellationToken);
         }
 
         await context.Publish(new GroundTransportCancelled(

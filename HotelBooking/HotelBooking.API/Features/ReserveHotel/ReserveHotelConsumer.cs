@@ -1,19 +1,22 @@
+using HotelBooking.Application.Abstractions;
 using HotelBooking.Domain.Entities;
-using HotelBooking.Infrastructure.Persistence;
 using HotelBooking.Contracts.Events;
 using MassTransit;
 using ReserveHotelCommand = HotelBooking.Contracts.Commands.ReserveHotel;
 
 namespace HotelBooking.API.Features.ReserveHotel;
 
+/// <summary>
+/// Consumer that handles hotel reservation commands.
+/// </summary>
 public class ReserveHotelConsumer : IConsumer<ReserveHotelCommand>
 {
-    private readonly HotelBookingDbContext _dbContext;
+    private readonly IHotelReservationRepository _repository;
     private readonly decimal _defaultPricePerNight = 150.00m;
 
-    public ReserveHotelConsumer(HotelBookingDbContext dbContext)
+    public ReserveHotelConsumer(IHotelReservationRepository repository)
     {
-        _dbContext = dbContext;
+        _repository = repository;
     }
 
     public async Task Consume(ConsumeContext<ReserveHotelCommand> context)
@@ -21,7 +24,7 @@ public class ReserveHotelConsumer : IConsumer<ReserveHotelCommand>
         var command = context.Message;
 
         var nights = (command.CheckOut - command.CheckIn).Days;
-        
+
         var reservation = new HotelReservation
         {
             Id = Guid.NewGuid(),
@@ -41,8 +44,7 @@ public class ReserveHotelConsumer : IConsumer<ReserveHotelCommand>
             ExpiresAt = DateTime.UtcNow.AddMinutes(15)
         };
 
-        _dbContext.HotelReservations.Add(reservation);
-        await _dbContext.SaveChangesAsync();
+        await _repository.AddAsync(reservation, context.CancellationToken);
 
         await context.Publish(new HotelReserved(
             command.CorrelationId,

@@ -1,18 +1,21 @@
+using GroundTransport.Application.Abstractions;
 using GroundTransport.Domain.Entities;
-using GroundTransport.Infrastructure.Persistence;
 using GroundTransport.Contracts.Events;
 using MassTransit;
 using ReserveGroundTransportCommand = GroundTransport.Contracts.Commands.ReserveGroundTransport;
 
 namespace GroundTransport.API.Features.ReserveGroundTransport;
 
+/// <summary>
+/// Consumer that handles ground transport reservation commands.
+/// </summary>
 public class ReserveGroundTransportConsumer : IConsumer<ReserveGroundTransportCommand>
 {
-    private readonly GroundTransportDbContext _dbContext;
+    private readonly ITransportReservationRepository _repository;
 
-    public ReserveGroundTransportConsumer(GroundTransportDbContext dbContext)
+    public ReserveGroundTransportConsumer(ITransportReservationRepository repository)
     {
-        _dbContext = dbContext;
+        _repository = repository;
     }
 
     public async Task Consume(ConsumeContext<ReserveGroundTransportCommand> context)
@@ -42,8 +45,7 @@ public class ReserveGroundTransportConsumer : IConsumer<ReserveGroundTransportCo
             ConfirmedAt = DateTime.UtcNow
         };
 
-        _dbContext.TransportReservations.Add(reservation);
-        await _dbContext.SaveChangesAsync();
+        await _repository.AddAsync(reservation, context.CancellationToken);
 
         await context.Publish(new GroundTransportReserved(
             command.CorrelationId,

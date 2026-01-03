@@ -1,7 +1,6 @@
 using MassTransit;
 using Payment.Application.Abstractions;
 using Payment.Domain.Entities;
-using Payment.Infrastructure.Persistence;
 using Payment.Contracts.Events;
 using AuthorisePaymentCommand = Payment.Contracts.Commands.AuthorisePayment;
 
@@ -12,12 +11,14 @@ namespace Payment.API.Features.AuthorisePayment;
 /// </summary>
 public class AuthorisePaymentConsumer : IConsumer<AuthorisePaymentCommand>
 {
-    private readonly PaymentDbContext _dbContext;
+    private readonly IPaymentTransactionRepository _transactionRepository;
     private readonly IPaymentMethodRepository _paymentMethodRepository;
 
-    public AuthorisePaymentConsumer(PaymentDbContext dbContext, IPaymentMethodRepository paymentMethodRepository)
+    public AuthorisePaymentConsumer(
+        IPaymentTransactionRepository transactionRepository,
+        IPaymentMethodRepository paymentMethodRepository)
     {
-        _dbContext = dbContext;
+        _transactionRepository = transactionRepository;
         _paymentMethodRepository = paymentMethodRepository;
     }
 
@@ -55,8 +56,7 @@ public class AuthorisePaymentConsumer : IConsumer<AuthorisePaymentCommand>
             AuthorisedAt = DateTime.UtcNow
         };
 
-        _dbContext.PaymentTransactions.Add(transaction);
-        await _dbContext.SaveChangesAsync(context.CancellationToken);
+        await _transactionRepository.AddAsync(transaction, context.CancellationToken);
 
         await context.Publish(new PaymentAuthorised(
             command.CorrelationId,

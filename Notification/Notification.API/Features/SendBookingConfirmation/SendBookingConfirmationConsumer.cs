@@ -1,19 +1,22 @@
 using MassTransit;
+using Notification.Application.Abstractions;
 using Notification.Domain.Entities;
-using Notification.Infrastructure.Persistence;
 using Notification.Contracts.Events;
 using SendBookingConfirmationCommand = Notification.Contracts.Commands.SendBookingConfirmation;
 
 namespace Notification.API.Features.SendBookingConfirmation;
 
+/// <summary>
+/// Consumer that handles booking confirmation notification commands.
+/// </summary>
 public class SendBookingConfirmationConsumer : IConsumer<SendBookingConfirmationCommand>
 {
-    private readonly NotificationDbContext _dbContext;
+    private readonly INotificationRepository _repository;
     private readonly ILogger<SendBookingConfirmationConsumer> _logger;
 
-    public SendBookingConfirmationConsumer(NotificationDbContext dbContext, ILogger<SendBookingConfirmationConsumer> logger)
+    public SendBookingConfirmationConsumer(INotificationRepository repository, ILogger<SendBookingConfirmationConsumer> logger)
     {
-        _dbContext = dbContext;
+        _repository = repository;
         _logger = logger;
     }
 
@@ -36,8 +39,7 @@ public class SendBookingConfirmationConsumer : IConsumer<SendBookingConfirmation
             SentAt = DateTime.UtcNow
         };
 
-        _dbContext.Notifications.Add(notification);
-        await _dbContext.SaveChangesAsync();
+        await _repository.AddAsync(notification, context.CancellationToken);
 
         _logger.LogInformation("Booking confirmation sent to {Email} for trip {TripId}", 
             command.CustomerEmail, command.TripId);

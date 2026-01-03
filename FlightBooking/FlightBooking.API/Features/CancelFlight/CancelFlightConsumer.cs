@@ -1,35 +1,36 @@
+using FlightBooking.Application.Abstractions;
 using FlightBooking.Domain.Entities;
-using FlightBooking.Infrastructure.Persistence;
 using FlightBooking.Contracts.Events;
 using MassTransit;
-using Microsoft.EntityFrameworkCore;
 using CancelFlightCommand = FlightBooking.Contracts.Commands.CancelFlight;
 
 namespace FlightBooking.API.Features.CancelFlight;
 
+/// <summary>
+/// Consumer that handles flight cancellation commands.
+/// </summary>
 public class CancelFlightConsumer : IConsumer<CancelFlightCommand>
 {
-    private readonly FlightBookingDbContext _dbContext;
+    private readonly IFlightReservationRepository _repository;
 
-    public CancelFlightConsumer(FlightBookingDbContext dbContext)
+    public CancelFlightConsumer(IFlightReservationRepository repository)
     {
-        _dbContext = dbContext;
+        _repository = repository;
     }
 
     public async Task Consume(ConsumeContext<CancelFlightCommand> context)
     {
         var command = context.Message;
 
-        var reservation = await _dbContext.FlightReservations
-            .FirstOrDefaultAsync(x => x.Id == command.FlightReservationId);
+        var reservation = await _repository.GetByIdAsync(command.FlightReservationId, context.CancellationToken);
 
         if (reservation is not null)
         {
             reservation.Status = ReservationStatus.Cancelled;
             reservation.CancellationReason = command.Reason;
             reservation.CancelledAt = DateTime.UtcNow;
-            
-            await _dbContext.SaveChangesAsync();
+
+            await _repository.UpdateAsync(reservation, context.CancellationToken);
         }
 
         await context.Publish(new FlightCancelled(

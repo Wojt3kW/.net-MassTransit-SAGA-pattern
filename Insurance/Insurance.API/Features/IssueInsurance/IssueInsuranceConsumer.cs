@@ -1,18 +1,21 @@
+using Insurance.Application.Abstractions;
 using Insurance.Domain.Entities;
-using Insurance.Infrastructure.Persistence;
 using Insurance.Contracts.Events;
 using MassTransit;
 using IssueInsuranceCommand = Insurance.Contracts.Commands.IssueInsurance;
 
 namespace Insurance.API.Features.IssueInsurance;
 
+/// <summary>
+/// Consumer that handles insurance policy issuance commands.
+/// </summary>
 public class IssueInsuranceConsumer : IConsumer<IssueInsuranceCommand>
 {
-    private readonly InsuranceDbContext _dbContext;
+    private readonly IInsurancePolicyRepository _repository;
 
-    public IssueInsuranceConsumer(InsuranceDbContext dbContext)
+    public IssueInsuranceConsumer(IInsurancePolicyRepository repository)
     {
-        _dbContext = dbContext;
+        _repository = repository;
     }
 
     public async Task Consume(ConsumeContext<IssueInsuranceCommand> context)
@@ -20,7 +23,7 @@ public class IssueInsuranceConsumer : IConsumer<IssueInsuranceCommand>
         var command = context.Message;
 
         var premium = CalculatePremium(command.TripTotalValue);
-        
+
         var policy = new InsurancePolicy
         {
             Id = Guid.NewGuid(),
@@ -41,8 +44,7 @@ public class IssueInsuranceConsumer : IConsumer<IssueInsuranceCommand>
             IssuedAt = DateTime.UtcNow
         };
 
-        _dbContext.InsurancePolicies.Add(policy);
-        await _dbContext.SaveChangesAsync();
+        await _repository.AddAsync(policy, context.CancellationToken);
 
         await context.Publish(new InsuranceIssued(
             command.CorrelationId,
