@@ -1,6 +1,6 @@
 using Insurance.Application.Abstractions;
-using Insurance.Domain.Entities;
 using Insurance.Contracts.Events;
+using Insurance.Domain.Entities;
 using MassTransit;
 using IssueInsuranceCommand = Insurance.Contracts.Commands.IssueInsurance;
 
@@ -30,6 +30,12 @@ public class IssueInsuranceConsumer : IConsumer<IssueInsuranceCommand>
                 command.TripId,
                 "Simulated: Customer not eligible for insurance"));
             return;
+        }
+
+        // SIMULATION: If customer name contains "TIMEOUT" - simulate timeout
+        if (command.CustomerName.Contains("TIMEOUT"))
+        {
+            await Task.Delay(TimeSpan.FromSeconds(65), context.CancellationToken);
         }
 
         var premium = CalculatePremium(command.TripTotalValue);
@@ -67,6 +73,6 @@ public class IssueInsuranceConsumer : IConsumer<IssueInsuranceCommand>
     }
 
     private static string GeneratePolicyNumber() => $"INS-{DateTime.UtcNow:yyyyMMdd}-{Guid.NewGuid().ToString()[..6].ToUpper()}";
-    
+
     private static decimal CalculatePremium(decimal tripValue) => tripValue * 0.05m; // 5% of trip value
 }

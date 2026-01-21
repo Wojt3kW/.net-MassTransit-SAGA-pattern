@@ -36,6 +36,13 @@ public class AuthorisePaymentConsumer : IConsumer<AuthorisePaymentCommand>
             return;
         }
 
+        // SIMULATION: If amount is 1_000_000_000 - simulate slow payment gateway (timeout test)
+        // This will delay response for 35 seconds, causing PaymentAuthorisationTimedOut
+        if (command.Amount == 1_000_000_000m)
+        {
+            await Task.Delay(TimeSpan.FromSeconds(35), context.CancellationToken);
+        }
+
         // Get payment method - either by ID or customer's default
         var paymentMethod = command.PaymentMethodId.HasValue
             ? await _paymentMethodRepository.GetByIdAsync(command.PaymentMethodId.Value, context.CancellationToken)

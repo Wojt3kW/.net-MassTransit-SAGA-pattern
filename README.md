@@ -143,7 +143,7 @@ dotnet run --project "SAGA pattern.AppHost"
 4. ✅ **Implement SAGA State Machine** - Happy path completed!
 5. ✅ **Handle compensations** - All failure scenarios with retry!
 6. ✅ **Failure simulation** - Test triggers in all consumers!
-7. 🎯 Implement timeouts (Quartz scheduler)
+7. ✅ **Implement timeouts** - Quartz scheduler with all 8 timeouts!
 8. 🎯 Implement User Cancellation flow
 9. 🎯 Implement Inbox/Outbox patterns
 

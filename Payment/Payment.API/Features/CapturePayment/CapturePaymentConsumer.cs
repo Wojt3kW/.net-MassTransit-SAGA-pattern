@@ -1,7 +1,7 @@
 using MassTransit;
 using Payment.Application.Abstractions;
-using Payment.Domain.Entities;
 using Payment.Contracts.Events;
+using Payment.Domain.Entities;
 using CapturePaymentCommand = Payment.Contracts.Commands.CapturePayment;
 
 namespace Payment.API.Features.CapturePayment;
@@ -31,6 +31,12 @@ public class CapturePaymentConsumer : IConsumer<CapturePaymentCommand>
                 command.PaymentAuthorisationId,
                 "Simulated: Insufficient funds for capture"));
             return;
+        }
+
+        // SIMULATION: If amount is 888.88 - simulate timeout
+        if (command.Amount == 888.88m)
+        {
+            await Task.Delay(TimeSpan.FromSeconds(35), context.CancellationToken);
         }
 
         var transaction = await _repository.GetByIdAsync(command.PaymentAuthorisationId, context.CancellationToken);

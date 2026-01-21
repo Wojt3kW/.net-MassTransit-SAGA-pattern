@@ -33,6 +33,12 @@ public class ReserveOutboundFlightConsumer : IConsumer<ReserveOutboundFlightComm
             return;
         }
 
+        // SIMULATION: If the flight number contains "TIMEOUT" - simulate a timeout
+        if (command.FlightNumber.Contains("TIMEOUT"))
+        {
+            await Task.Delay(TimeSpan.FromSeconds(65), context.CancellationToken);
+        }
+
         // Simulate flight reservation (in real scenario, call external airline API)
         var reservation = new FlightReservation
         {

@@ -1,6 +1,6 @@
 using HotelBooking.Application.Abstractions;
-using HotelBooking.Domain.Entities;
 using HotelBooking.Contracts.Events;
+using HotelBooking.Domain.Entities;
 using MassTransit;
 using ReserveHotelCommand = HotelBooking.Contracts.Commands.ReserveHotel;
 
@@ -31,6 +31,12 @@ public class ReserveHotelConsumer : IConsumer<ReserveHotelCommand>
                 command.TripId,
                 $"Simulated: No rooms available at {command.HotelName}"));
             return;
+        }
+
+        // SIMULATION: If hotel name contains "TIMEOUT" - simulate a timeout
+        if (command.HotelName.Contains("TIMEOUT"))
+        {
+            await Task.Delay(TimeSpan.FromSeconds(65), context.CancellationToken);
         }
 
         var nights = (command.CheckOut - command.CheckIn).Days;

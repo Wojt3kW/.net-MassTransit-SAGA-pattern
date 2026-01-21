@@ -1,6 +1,6 @@
 using GroundTransport.Application.Abstractions;
-using GroundTransport.Domain.Entities;
 using GroundTransport.Contracts.Events;
+using GroundTransport.Domain.Entities;
 using MassTransit;
 using ReserveGroundTransportCommand = GroundTransport.Contracts.Commands.ReserveGroundTransport;
 
@@ -30,6 +30,12 @@ public class ReserveGroundTransportConsumer : IConsumer<ReserveGroundTransportCo
                 command.TripId,
                 "Simulated: No vehicles available"));
             return;
+        }
+
+        // SIMULATION: If type contains "TIMEOUT" - simulate a timeout
+        if (command.Type.Contains("TIMEOUT"))
+        {
+            await Task.Delay(TimeSpan.FromSeconds(65), context.CancellationToken);
         }
 
         var transportType = command.Type.ToLower() switch
@@ -68,7 +74,7 @@ public class ReserveGroundTransportConsumer : IConsumer<ReserveGroundTransportCo
     }
 
     private static string GenerateConfirmationCode() => $"GT-{Guid.NewGuid().ToString()[..8].ToUpper()}";
-    
+
     private static decimal CalculatePrice(TransportType type, int passengers) => type switch
     {
         TransportType.AirportTransfer => 50.00m * passengers,

@@ -1,6 +1,6 @@
 using HotelBooking.Application.Abstractions;
-using HotelBooking.Domain.Entities;
 using HotelBooking.Contracts.Events;
+using HotelBooking.Domain.Entities;
 using MassTransit;
 using ConfirmHotelCommand = HotelBooking.Contracts.Commands.ConfirmHotel;
 
@@ -43,6 +43,12 @@ public class ConfirmHotelConsumer : IConsumer<ConfirmHotelCommand>
                 command.TripId,
                 command.HotelReservationId));
             return;
+        }
+
+        // SIMULATION: If hotel name contains "CONFIRM_TIMEOUT" - simulate timeout
+        if (reservation.HotelName.Contains("CONFIRM_TIMEOUT", StringComparison.OrdinalIgnoreCase))
+        {
+            await Task.Delay(TimeSpan.FromMinutes(16), context.CancellationToken);
         }
 
         reservation.Status = HotelReservationStatus.Confirmed;

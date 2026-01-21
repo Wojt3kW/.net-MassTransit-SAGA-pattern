@@ -33,6 +33,12 @@ public class ReserveReturnFlightConsumer : IConsumer<ReserveReturnFlightCommand>
             return;
         }
 
+        // SIMULATION: If the flight number contains "TIMEOUT" - simulate a timeout
+        if (command.FlightNumber.Contains("TIMEOUT"))
+        {
+            await Task.Delay(TimeSpan.FromSeconds(65), context.CancellationToken);
+        }
+
         var reservation = new FlightReservation
         {
             Id = Guid.NewGuid(),

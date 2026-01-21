@@ -90,7 +90,8 @@ public static class Extensions
                     {
                         options.SetDbStatementForText = true;
                         options.RecordException = true;
-                    });
+                    })
+                    .AddQuartzInstrumentation();
             });
 
         builder.AddOpenTelemetryExporters();

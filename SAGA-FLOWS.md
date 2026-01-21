@@ -438,8 +438,8 @@ Payment Capture Failed:
 | Hotel Reservation | 60 seconds | Cancel flights → Release payment |
 | Hotel Confirmation | 15 minutes | Cancel all → Release payment |
 | Ground Transport | 60 seconds | Cancel hotel, flights → Release payment |
-| Insurance | 30 seconds | Full compensation cascade |
-| Payment Capture | 30 seconds | Retry 3x, then full compensation |
+| Insurance | 60 seconds | Full compensation cascade |
+| Payment Capture | 30 seconds | Retry 3x, then full compensation cascade |
 
 ### Timeout Flow Example
 
@@ -463,6 +463,43 @@ HotelConfirmationExpired (Scheduled event fires)
     ▼
 Begin Compensation...
 ```
+
+### Late Event Handling (Active Cancellation)
+
+When a timeout occurs, the SAGA transitions to `Failed` state. However, the slow service may still complete its work and publish a success event. Instead of ignoring these "orphaned" resources, the SAGA actively cancels them.
+
+```
+┌─────────────────────────────────────────────────────────────────────────────────────┐
+│                      ACTIVE CANCELLATION OF LATE EVENTS                             │
+└─────────────────────────────────────────────────────────────────────────────────────┘
+
+Timeline:
+    0s   ReserveOutboundFlight sent, 60s timeout scheduled
+   60s   ⏱️ TIMEOUT! → ReleasingPayment → Failed
+   65s   Late OutboundFlightReserved arrives
+         │
+         ▼
+    ┌─────────────────────────────────────────┐
+    │ During(Failed)                          │
+    │   When(OutboundFlightReserved)          │
+    │     → Publish(CancelFlight)             │  ← Active cancellation!
+    │     → FlightReservation.Status=Cancelled│
+    └─────────────────────────────────────────┘
+```
+
+**Events actively cancelled in Failed state:**
+- `OutboundFlightReserved` → `CancelFlight`
+- `ReturnFlightReserved` → `CancelFlight`
+- `HotelReserved` → `CancelHotel`
+- `GroundTransportReserved` → `CancelGroundTransport`
+- `InsuranceIssued` → `CancelInsurance`
+
+**Events ignored in Failed state (no action needed):**
+- `FlightReservationFailed`, `FlightCancelled`
+- `HotelConfirmed`, `HotelReservationFailed`, `HotelConfirmationExpired`, `HotelCancelled`
+- `GroundTransportReservationFailed`, `GroundTransportCancelled`
+- `InsuranceIssueFailed`, `InsuranceCancelled`
+- `PaymentCaptured`, `PaymentCaptureFailed`, `PaymentReleased`
 
 ---
 
@@ -674,9 +711,9 @@ RefundPayment ──► PaymentRefunded (minus any fees)
 | Ground Transport Failure | ✅ Implemented | Compensation cascade |
 | Insurance Failure | ✅ Implemented | Compensation cascade with IfElse |
 | Payment Capture Failure | ✅ Implemented | Retry 3x + full compensation with IfElse |
+| Timeouts (Quartz) | ✅ Implemented | All 8 timeouts with compensation |
 | User Cancellation | 🎯 TODO | Compensate based on state |
 | Post-Completion Refund | 🎯 TODO | RefundPayment flow |
-| Timeouts (Quartz) | 🎯 TODO | Schedule-based timeouts |
 | Manual Review State | 🎯 TODO | For edge cases |
 
 ---

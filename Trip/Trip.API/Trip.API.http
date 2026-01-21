@@ -430,6 +430,413 @@ Content-Type: application/json
   }
 }
 
+#######################################################
+# TIMEOUT SCENARIOS - QUARTZ SCHEDULER TESTS
+#######################################################
+
+### TIMEOUT: PaymentAuthorisationTimedOut (amount=1_000_000_000)
+# Tests Quartz scheduler - payment gateway delays 35 seconds, timeout fires after 30 seconds
+# Expected: SAGA transitions to TimedOut state, TripBookingFailed published
+# No compensation needed - payment was never authorised
+# Trigger: Amount == 1_000_000_000 → 35s delay in AuthorisePaymentConsumer
+POST {{Trip.API_HostAddress}}/api/trips
+Content-Type: application/json
+
+{
+  "customerId": "c1111111-1111-1111-1111-111111111111",
+  "customerEmail": "john.smith@email.com",
+  "customerName": "John Smith",
+  "details": {
+    "outboundFlight": {
+      "origin": "LHR",
+      "destination": "JFK",
+      "departureDate": "2026-03-15T10:30:00Z",
+      "flightNumber": "BA178",
+      "carrier": "British Airways"
+    },
+    "returnFlight": {
+      "origin": "JFK",
+      "destination": "LHR",
+      "departureDate": "2026-03-22T18:00:00Z",
+      "flightNumber": "BA179",
+      "carrier": "British Airways"
+    },
+    "hotel": {
+      "hotelId": "245bccd2-f5f3-40e3-8dcf-885fec39aaaa",
+      "hotelName": "The Plaza Hotel",
+      "checkIn": "2026-03-15T15:00:00Z",
+      "checkOut": "2026-03-22T11:00:00Z",
+      "numberOfGuests": 2
+    },
+    "groundTransport": null,
+    "includeInsurance": false,
+    "paymentMethodId": "a1111111-1111-1111-1111-111111111111",
+    "payment": {
+      "cardNumber": "4242424242424242",
+      "cardHolderName": "John Smith",
+      "expiryDate": "12/28",
+      "cvv": "123",
+      "amount": 1000000000,
+      "currency": "GBP"
+    }
+  }
+}
+
+### TIMEOUT: OutboundFlightReservationTimedOut (flightNumber contains "TIMEOUT")
+# Tests Quartz scheduler - flight API delays 65 seconds, timeout fires after 60 seconds
+# Expected: SAGA transitions to ReleasingPayment → Failed
+# Compensation: ReleasePayment
+# Trigger: FlightNumber.Contains("TIMEOUT") → 65s delay in ReserveOutboundFlightConsumer
+POST {{Trip.API_HostAddress}}/api/trips
+Content-Type: application/json
+
+{
+  "customerId": "c1111111-1111-1111-1111-111111111111",
+  "customerEmail": "john.smith@email.com",
+  "customerName": "John Smith",
+  "details": {
+    "outboundFlight": {
+      "origin": "LHR",
+      "destination": "JFK",
+      "departureDate": "2026-03-15T10:30:00Z",
+      "flightNumber": "TIMEOUT",
+      "carrier": "British Airways"
+    },
+    "returnFlight": {
+      "origin": "JFK",
+      "destination": "LHR",
+      "departureDate": "2026-03-22T18:00:00Z",
+      "flightNumber": "BA179",
+      "carrier": "British Airways"
+    },
+    "hotel": {
+      "hotelId": "245bccd2-f5f3-40e3-8dcf-885fec39aaaa",
+      "hotelName": "The Plaza Hotel",
+      "checkIn": "2026-03-15T15:00:00Z",
+      "checkOut": "2026-03-22T11:00:00Z",
+      "numberOfGuests": 2
+    },
+    "groundTransport": null,
+    "includeInsurance": false,
+    "paymentMethodId": "a1111111-1111-1111-1111-111111111111",
+    "payment": {
+      "cardNumber": "4242424242424242",
+      "cardHolderName": "John Smith",
+      "expiryDate": "12/28",
+      "cvv": "123",
+      "amount": 2500.00,
+      "currency": "GBP"
+    }
+  }
+}
+
+### TIMEOUT: ReturnFlightReservationTimedOut (return flightNumber contains "TIMEOUT")
+# Tests Quartz scheduler - flight API delays 65 seconds, timeout fires after 60 seconds
+# Expected: SAGA transitions to CompensatingOutboundFlight → ReleasingPayment → Failed
+# Compensation: CancelOutboundFlight → ReleasePayment
+# Trigger: FlightNumber.Contains("TIMEOUT") → 65s delay in ReserveReturnFlightConsumer
+POST {{Trip.API_HostAddress}}/api/trips
+Content-Type: application/json
+
+{
+  "customerId": "c1111111-1111-1111-1111-111111111111",
+  "customerEmail": "john.smith@email.com",
+  "customerName": "John Smith",
+  "details": {
+    "outboundFlight": {
+      "origin": "LHR",
+      "destination": "JFK",
+      "departureDate": "2026-03-15T10:30:00Z",
+      "flightNumber": "BA178",
+      "carrier": "British Airways"
+    },
+    "returnFlight": {
+      "origin": "JFK",
+      "destination": "LHR",
+      "departureDate": "2026-03-22T18:00:00Z",
+      "flightNumber": "TIMEOUT",
+      "carrier": "British Airways"
+    },
+    "hotel": {
+      "hotelId": "245bccd2-f5f3-40e3-8dcf-885fec39aaaa",
+      "hotelName": "The Plaza Hotel",
+      "checkIn": "2026-03-15T15:00:00Z",
+      "checkOut": "2026-03-22T11:00:00Z",
+      "numberOfGuests": 2
+    },
+    "groundTransport": null,
+    "includeInsurance": false,
+    "paymentMethodId": "a1111111-1111-1111-1111-111111111111",
+    "payment": {
+      "cardNumber": "4242424242424242",
+      "cardHolderName": "John Smith",
+      "expiryDate": "12/28",
+      "cvv": "123",
+      "amount": 2500.00,
+      "currency": "GBP"
+    }
+  }
+}
+
+### TIMEOUT: HotelReservationTimedOut (hotelName contains "TIMEOUT")
+# Tests Quartz scheduler - hotel API delays 65 seconds, timeout fires after 60 seconds
+# Expected: SAGA transitions to CompensatingReturnFlight → ... → Failed
+# Compensation: CancelReturnFlight → CancelOutboundFlight → ReleasePayment
+# Trigger: HotelName.Contains("TIMEOUT") → 65s delay in ReserveHotelConsumer
+POST {{Trip.API_HostAddress}}/api/trips
+Content-Type: application/json
+
+{
+  "customerId": "c1111111-1111-1111-1111-111111111111",
+  "customerEmail": "john.smith@email.com",
+  "customerName": "John Smith",
+  "details": {
+    "outboundFlight": {
+      "origin": "LHR",
+      "destination": "JFK",
+      "departureDate": "2026-03-15T10:30:00Z",
+      "flightNumber": "BA178",
+      "carrier": "British Airways"
+    },
+    "returnFlight": {
+      "origin": "JFK",
+      "destination": "LHR",
+      "departureDate": "2026-03-22T18:00:00Z",
+      "flightNumber": "BA179",
+      "carrier": "British Airways"
+    },
+    "hotel": {
+      "hotelId": "245bccd2-f5f3-40e3-8dcf-885fec39aaaa",
+      "hotelName": "TIMEOUT Hotel",
+      "checkIn": "2026-03-15T15:00:00Z",
+      "checkOut": "2026-03-22T11:00:00Z",
+      "numberOfGuests": 2
+    },
+    "groundTransport": null,
+    "includeInsurance": false,
+    "paymentMethodId": "a1111111-1111-1111-1111-111111111111",
+    "payment": {
+      "cardNumber": "4242424242424242",
+      "cardHolderName": "John Smith",
+      "expiryDate": "12/28",
+      "cvv": "123",
+      "amount": 2500.00,
+      "currency": "GBP"
+    }
+  }
+}
+
+### TIMEOUT: GroundTransportReservationTimedOut (type contains "TIMEOUT")
+# Tests Quartz scheduler - transport API delays 65 seconds, timeout fires after 60 seconds
+# Expected: SAGA transitions to CompensatingHotel → ... → Failed
+# Compensation: CancelHotel → CancelReturnFlight → CancelOutboundFlight → ReleasePayment
+# Trigger: Type.Contains("TIMEOUT") → 65s delay in ReserveGroundTransportConsumer
+POST {{Trip.API_HostAddress}}/api/trips
+Content-Type: application/json
+
+{
+  "customerId": "c1111111-1111-1111-1111-111111111111",
+  "customerEmail": "john.smith@email.com",
+  "customerName": "John Smith",
+  "details": {
+    "outboundFlight": {
+      "origin": "LHR",
+      "destination": "JFK",
+      "departureDate": "2026-03-15T10:30:00Z",
+      "flightNumber": "BA178",
+      "carrier": "British Airways"
+    },
+    "returnFlight": {
+      "origin": "JFK",
+      "destination": "LHR",
+      "departureDate": "2026-03-22T18:00:00Z",
+      "flightNumber": "BA179",
+      "carrier": "British Airways"
+    },
+    "hotel": {
+      "hotelId": "245bccd2-f5f3-40e3-8dcf-885fec39aaaa",
+      "hotelName": "The Plaza Hotel",
+      "checkIn": "2026-03-15T15:00:00Z",
+      "checkOut": "2026-03-22T11:00:00Z",
+      "numberOfGuests": 2
+    },
+    "groundTransport": {
+      "type": "TIMEOUT",
+      "pickupLocation": "JFK Airport",
+      "dropoffLocation": "The Plaza Hotel",
+      "pickupDate": "2026-03-15T11:00:00Z",
+      "passengerCount": 2
+    },
+    "includeInsurance": false,
+    "paymentMethodId": "a1111111-1111-1111-1111-111111111111",
+    "payment": {
+      "cardNumber": "4242424242424242",
+      "cardHolderName": "John Smith",
+      "expiryDate": "12/28",
+      "cvv": "123",
+      "amount": 2500.00,
+      "currency": "GBP"
+    }
+  }
+}
+
+### TIMEOUT: InsuranceIssuingTimedOut (customerName contains "TIMEOUT")
+# Tests Quartz scheduler - insurance API delays 65 seconds, timeout fires after 60 seconds
+# Expected: SAGA transitions to CompensatingGroundTransport → ... → Failed
+# Compensation: CancelGroundTransport → CancelHotel → CancelReturnFlight → CancelOutboundFlight → ReleasePayment
+# Trigger: CustomerName.Contains("TIMEOUT") → 65s delay in IssueInsuranceConsumer
+POST {{Trip.API_HostAddress}}/api/trips
+Content-Type: application/json
+
+{
+  "customerId": "c1111111-1111-1111-1111-111111111111",
+  "customerEmail": "john.smith@email.com",
+  "customerName": "TIMEOUT Smith",
+  "details": {
+    "outboundFlight": {
+      "origin": "LHR",
+      "destination": "JFK",
+      "departureDate": "2026-03-15T10:30:00Z",
+      "flightNumber": "BA178",
+      "carrier": "British Airways"
+    },
+    "returnFlight": {
+      "origin": "JFK",
+      "destination": "LHR",
+      "departureDate": "2026-03-22T18:00:00Z",
+      "flightNumber": "BA179",
+      "carrier": "British Airways"
+    },
+    "hotel": {
+      "hotelId": "245bccd2-f5f3-40e3-8dcf-885fec39aaaa",
+      "hotelName": "The Plaza Hotel",
+      "checkIn": "2026-03-15T15:00:00Z",
+      "checkOut": "2026-03-22T11:00:00Z",
+      "numberOfGuests": 2
+    },
+    "groundTransport": {
+      "type": "AirportTransfer",
+      "pickupLocation": "JFK Airport",
+      "dropoffLocation": "The Plaza Hotel",
+      "pickupDate": "2026-03-15T11:00:00Z",
+      "passengerCount": 2
+    },
+    "includeInsurance": true,
+    "paymentMethodId": "a1111111-1111-1111-1111-111111111111",
+    "payment": {
+      "cardNumber": "4242424242424242",
+      "cardHolderName": "John Smith",
+      "expiryDate": "12/28",
+      "cvv": "123",
+      "amount": 2500.00,
+      "currency": "GBP"
+    }
+  }
+}
+
+### TIMEOUT: PaymentCaptureTimedOut (amount=888.88)
+# Tests Quartz scheduler - payment capture delays 35 seconds, timeout fires after 30 seconds
+# Expected: SAGA transitions to full compensation cascade → Failed
+# Compensation: CancelInsurance → CancelGroundTransport → CancelHotel → CancelReturnFlight → CancelOutboundFlight → ReleasePayment
+# Trigger: Amount == 888.88 → 35s delay in CapturePaymentConsumer
+POST {{Trip.API_HostAddress}}/api/trips
+Content-Type: application/json
+
+{
+  "customerId": "c1111111-1111-1111-1111-111111111111",
+  "customerEmail": "john.smith@email.com",
+  "customerName": "John Smith",
+  "details": {
+    "outboundFlight": {
+      "origin": "LHR",
+      "destination": "JFK",
+      "departureDate": "2026-03-15T10:30:00Z",
+      "flightNumber": "BA178",
+      "carrier": "British Airways"
+    },
+    "returnFlight": {
+      "origin": "JFK",
+      "destination": "LHR",
+      "departureDate": "2026-03-22T18:00:00Z",
+      "flightNumber": "BA179",
+      "carrier": "British Airways"
+    },
+    "hotel": {
+      "hotelId": "245bccd2-f5f3-40e3-8dcf-885fec39aaaa",
+      "hotelName": "The Plaza Hotel",
+      "checkIn": "2026-03-15T15:00:00Z",
+      "checkOut": "2026-03-22T11:00:00Z",
+      "numberOfGuests": 2
+    },
+    "groundTransport": {
+      "type": "AirportTransfer",
+      "pickupLocation": "JFK Airport",
+      "dropoffLocation": "The Plaza Hotel",
+      "pickupDate": "2026-03-15T11:00:00Z",
+      "passengerCount": 2
+    },
+    "includeInsurance": true,
+    "paymentMethodId": "a1111111-1111-1111-1111-111111111111",
+    "payment": {
+      "cardNumber": "4242424242424242",
+      "cardHolderName": "John Smith",
+      "expiryDate": "12/28",
+      "cvv": "123",
+      "amount": 888.88,
+      "currency": "GBP"
+    }
+  }
+}
+
+### TIMEOUT: HotelConfirmationTimedOut (hotelName contains "CONFIRM_TIMEOUT")
+# Tests Quartz scheduler - hotel confirmation delays 16 minutes, timeout fires after 15 minutes
+# Expected: SAGA transitions to CompensatingHotel → ... → Failed
+# Compensation: CancelHotel → CancelReturnFlight → CancelOutboundFlight → ReleasePayment
+# Trigger: HotelName.Contains("CONFIRM_TIMEOUT") → 16min delay in ConfirmHotelConsumer
+# WARNING: This test takes 15+ minutes to complete!
+POST {{Trip.API_HostAddress}}/api/trips
+Content-Type: application/json
+
+{
+  "customerId": "c1111111-1111-1111-1111-111111111111",
+  "customerEmail": "john.smith@email.com",
+  "customerName": "John Smith",
+  "details": {
+    "outboundFlight": {
+      "origin": "LHR",
+      "destination": "JFK",
+      "departureDate": "2026-03-15T10:30:00Z",
+      "flightNumber": "BA178",
+      "carrier": "British Airways"
+    },
+    "returnFlight": {
+      "origin": "JFK",
+      "destination": "LHR",
+      "departureDate": "2026-03-22T18:00:00Z",
+      "flightNumber": "BA179",
+      "carrier": "British Airways"
+    },
+    "hotel": {
+      "hotelId": "245bccd2-f5f3-40e3-8dcf-885fec39aaaa",
+      "hotelName": "CONFIRM_TIMEOUT Hotel",
+      "checkIn": "2026-03-15T15:00:00Z",
+      "checkOut": "2026-03-22T11:00:00Z",
+      "numberOfGuests": 2
+    },
+    "groundTransport": null,
+    "includeInsurance": false,
+    "paymentMethodId": "a1111111-1111-1111-1111-111111111111",
+    "payment": {
+      "cardNumber": "4242424242424242",
+      "cardHolderName": "John Smith",
+      "expiryDate": "12/28",
+      "cvv": "123",
+      "amount": 2500.00,
+      "currency": "GBP"
+    }
+  }
+}
+
 ### Get a completed trip
 GET {{Trip.API_HostAddress}}/api/trips/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa
 Accept: application/json
