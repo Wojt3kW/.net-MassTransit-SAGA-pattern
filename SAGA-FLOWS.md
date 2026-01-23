@@ -712,7 +712,7 @@ RefundPayment ──► PaymentRefunded (minus any fees)
 | Insurance Failure | ✅ Implemented | Compensation cascade with IfElse |
 | Payment Capture Failure | ✅ Implemented | Retry 3x + full compensation with IfElse |
 | Timeouts (Quartz) | ✅ Implemented | All 8 timeouts with compensation |
-| User Cancellation | 🎯 TODO | Compensate based on state |
+| User Cancellation | ✅ Implemented | IsCancelledByUser flag, Cancelled terminal state |
 | Post-Completion Refund | 🎯 TODO | RefundPayment flow |
 | Manual Review State | 🎯 TODO | For edge cases |
 

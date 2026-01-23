@@ -144,8 +144,9 @@ dotnet run --project "SAGA pattern.AppHost"
 5. ✅ **Handle compensations** - All failure scenarios with retry!
 6. ✅ **Failure simulation** - Test triggers in all consumers!
 7. ✅ **Implement timeouts** - Quartz scheduler with all 8 timeouts!
-8. 🎯 Implement User Cancellation flow
-9. 🎯 Implement Inbox/Outbox patterns
+8. ✅ **User Cancellation** - Cancel during booking with IsCancelledByUser flag!
+9. 🎯 Implement Manual Review State
+10. 🎯 Implement Inbox/Outbox patterns
 
 ## Testing
 
