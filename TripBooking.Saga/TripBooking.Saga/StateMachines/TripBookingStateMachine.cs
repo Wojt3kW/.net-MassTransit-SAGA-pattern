@@ -274,6 +274,7 @@ public class TripBookingStateMachine : MassTransitStateMachine<TripBookingSagaSt
 
             // Trip canceled - no resources reserved yet, just cancel
             When(TripBookingCancelled)
+                .Then(context => context.Saga.IsCancelledByUser = true)
                 .Unschedule(PaymentAuthorisationTimeoutSchedule)
                 .TransitionTo(Cancelled)
         );
@@ -308,6 +309,7 @@ public class TripBookingStateMachine : MassTransitStateMachine<TripBookingSagaSt
                 .Publish(context => CreateReleasePaymentCommand(context.Saga, $"Outbound flight reservation timed out after {_settings.OutboundFlightReservationTimeout.TotalSeconds} seconds")),
 
             When(TripBookingCancelled)
+                .Then(context => context.Saga.IsCancelledByUser = true)
                 .Unschedule(OutboundFlightReservationTimeoutSchedule)
                 .TransitionTo(ReleasingPayment)
                 .Publish(context => CreateReleasePaymentCommand(context.Saga, context.Message.Reason))
@@ -342,6 +344,7 @@ public class TripBookingStateMachine : MassTransitStateMachine<TripBookingSagaSt
                 ),
 
             When(TripBookingCancelled)
+                .Then(context => context.Saga.IsCancelledByUser = true)
                 .Unschedule(ReturnFlightReservationTimeoutSchedule)
                 .TransitionTo(CompensatingOutboundFlight)
                 .Publish(context => CreateCancelOutboundFlightCommand(context.Saga, context.Message.Reason))
@@ -379,6 +382,7 @@ public class TripBookingStateMachine : MassTransitStateMachine<TripBookingSagaSt
                 ),
 
             When(TripBookingCancelled)
+                .Then(context => context.Saga.IsCancelledByUser = true)
                 .Unschedule(HotelReservationTimeoutSchedule)
                 .TransitionTo(CompensatingReturnFlight)
                 .Publish(context => CreateCancelReturnFlightCommand(context.Saga, context.Message.Reason))
@@ -428,6 +432,7 @@ public class TripBookingStateMachine : MassTransitStateMachine<TripBookingSagaSt
 
 
             When(TripBookingCancelled)
+                .Then(context => context.Saga.IsCancelledByUser = true)
                 .Unschedule(HotelConfirmationTimeoutSchedule)
                 .TransitionTo(CompensatingHotel)
                 .Publish(context => CreateCancelHotelCommand(context.Saga, context.Message.Reason))
@@ -473,6 +478,7 @@ public class TripBookingStateMachine : MassTransitStateMachine<TripBookingSagaSt
                 ),
 
             When(TripBookingCancelled)
+                .Then(context => context.Saga.IsCancelledByUser = true)
                 .Unschedule(GroundTransportReservationTimeoutSchedule)
                 .TransitionTo(CompensatingHotel)
                 .Publish(context => CreateCancelHotelCommand(context.Saga, context.Message.Reason))
@@ -519,6 +525,7 @@ public class TripBookingStateMachine : MassTransitStateMachine<TripBookingSagaSt
                 ),
 
             When(TripBookingCancelled)
+                .Then(context => context.Saga.IsCancelledByUser = true)
                 .Unschedule(InsuranceIssuingTimeoutSchedule)
                 .IfElse(
                     context => context.Saga.IncludeGroundTransport,
@@ -588,20 +595,22 @@ public class TripBookingStateMachine : MassTransitStateMachine<TripBookingSagaSt
 
 
             When(TripBookingCancelled)
+                .Then(context => context.Saga.IsCancelledByUser = true)
                 .Unschedule(PaymentCaptureTimeoutSchedule)
                 .IfElse(
                     context => context.Saga.IncludeInsurance,
                     withInsurance => withInsurance
                         .TransitionTo(CompensatingInsurance)
                         .Publish(context => CreateCancelInsuranceCommand(context.Saga, context.Message.Reason)),
-                    noInsurance => noInsurance.IfElse(
-                        context => context.Saga.IncludeGroundTransport,
-                        withTransport => withTransport
-                            .TransitionTo(CompensatingGroundTransport)
-                            .Publish(context => CreateCancelGroundTransportCommand(context.Saga, context.Message.Reason)),
-                        noTransport => noTransport
-                            .TransitionTo(CompensatingHotel)
-                            .Publish(context => CreateCancelHotelCommand(context.Saga, context.Message.Reason))))
+                    noInsurance => noInsurance
+                        .IfElse(
+                            context => context.Saga.IncludeGroundTransport,
+                            withTransport => withTransport
+                                .TransitionTo(CompensatingGroundTransport)
+                                .Publish(context => CreateCancelGroundTransportCommand(context.Saga, context.Message.Reason)),
+                            noTransport => noTransport
+                                .TransitionTo(CompensatingHotel)
+                                .Publish(context => CreateCancelHotelCommand(context.Saga, context.Message.Reason))))
         );
     }
 
@@ -651,8 +660,14 @@ public class TripBookingStateMachine : MassTransitStateMachine<TripBookingSagaSt
         During(ReleasingPayment,
             When(PaymentReleased)
                 .Then(context => context.Saga.PaymentTransactionId = context.Message.PaymentAuthorisationId)
-                .TransitionTo(Failed)
-                .Publish(context => CreateTripBookingFailedEvent(context.Saga, context.Message.Reason))
+                .IfElse(context => context.Saga.IsCancelledByUser,
+                    cancelled => cancelled
+                        .TransitionTo(Cancelled)
+                        .Publish(context => CreateTripBookingCancelledEvent(context.Saga, context.Message.Reason)),
+                    notCancelled => notCancelled
+                        .TransitionTo(Failed)
+                        .Publish(context => CreateTripBookingFailedEvent(context.Saga, context.Message.Reason))
+                )
         );
     }
 

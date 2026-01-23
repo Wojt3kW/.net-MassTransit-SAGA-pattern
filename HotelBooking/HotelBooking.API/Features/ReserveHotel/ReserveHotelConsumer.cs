@@ -33,8 +33,8 @@ public class ReserveHotelConsumer : IConsumer<ReserveHotelCommand>
             return;
         }
 
-        // SIMULATION: If hotel name contains "TIMEOUT" - simulate a timeout
-        if (command.HotelName.Contains("TIMEOUT"))
+        // SIMULATION: If hotel name starts with "TIMEOUT" - simulate a timeout
+        if (command.HotelName.StartsWith("TIMEOUT"))
         {
             await Task.Delay(TimeSpan.FromSeconds(65), context.CancellationToken);
         }

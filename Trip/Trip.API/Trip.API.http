@@ -482,11 +482,11 @@ Content-Type: application/json
   }
 }
 
-### TIMEOUT: OutboundFlightReservationTimedOut (flightNumber contains "TIMEOUT")
+### TIMEOUT: OutboundFlightReservationTimedOut (flightNumber starts with "TIMEOUT")
 # Tests Quartz scheduler - flight API delays 65 seconds, timeout fires after 60 seconds
 # Expected: SAGA transitions to ReleasingPayment → Failed
 # Compensation: ReleasePayment
-# Trigger: FlightNumber.Contains("TIMEOUT") → 65s delay in ReserveOutboundFlightConsumer
+# Trigger: FlightNumber.StartsWith("TIMEOUT") → 65s delay in ReserveOutboundFlightConsumer
 POST {{Trip.API_HostAddress}}/api/trips
 Content-Type: application/json
 
@@ -530,11 +530,11 @@ Content-Type: application/json
   }
 }
 
-### TIMEOUT: ReturnFlightReservationTimedOut (return flightNumber contains "TIMEOUT")
+### TIMEOUT: ReturnFlightReservationTimedOut (return flightNumber starts with "TIMEOUT")
 # Tests Quartz scheduler - flight API delays 65 seconds, timeout fires after 60 seconds
 # Expected: SAGA transitions to CompensatingOutboundFlight → ReleasingPayment → Failed
 # Compensation: CancelOutboundFlight → ReleasePayment
-# Trigger: FlightNumber.Contains("TIMEOUT") → 65s delay in ReserveReturnFlightConsumer
+# Trigger: FlightNumber.StartsWith("TIMEOUT") → 65s delay in ReserveReturnFlightConsumer
 POST {{Trip.API_HostAddress}}/api/trips
 Content-Type: application/json
 
@@ -578,11 +578,11 @@ Content-Type: application/json
   }
 }
 
-### TIMEOUT: HotelReservationTimedOut (hotelName contains "TIMEOUT")
+### TIMEOUT: HotelReservationTimedOut (hotelName starts with "TIMEOUT")
 # Tests Quartz scheduler - hotel API delays 65 seconds, timeout fires after 60 seconds
 # Expected: SAGA transitions to CompensatingReturnFlight → ... → Failed
 # Compensation: CancelReturnFlight → CancelOutboundFlight → ReleasePayment
-# Trigger: HotelName.Contains("TIMEOUT") → 65s delay in ReserveHotelConsumer
+# Trigger: HotelName.StartsWith("TIMEOUT") → 65s delay in ReserveHotelConsumer
 POST {{Trip.API_HostAddress}}/api/trips
 Content-Type: application/json
 
@@ -626,11 +626,11 @@ Content-Type: application/json
   }
 }
 
-### TIMEOUT: GroundTransportReservationTimedOut (type contains "TIMEOUT")
+### TIMEOUT: GroundTransportReservationTimedOut (type starts with "TIMEOUT")
 # Tests Quartz scheduler - transport API delays 65 seconds, timeout fires after 60 seconds
 # Expected: SAGA transitions to CompensatingHotel → ... → Failed
 # Compensation: CancelHotel → CancelReturnFlight → CancelOutboundFlight → ReleasePayment
-# Trigger: Type.Contains("TIMEOUT") → 65s delay in ReserveGroundTransportConsumer
+# Trigger: Type.StartsWith("TIMEOUT") → 65s delay in ReserveGroundTransportConsumer
 POST {{Trip.API_HostAddress}}/api/trips
 Content-Type: application/json
 
@@ -680,11 +680,11 @@ Content-Type: application/json
   }
 }
 
-### TIMEOUT: InsuranceIssuingTimedOut (customerName contains "TIMEOUT")
+### TIMEOUT: InsuranceIssuingTimedOut (customerName starts with "TIMEOUT")
 # Tests Quartz scheduler - insurance API delays 65 seconds, timeout fires after 60 seconds
 # Expected: SAGA transitions to CompensatingGroundTransport → ... → Failed
 # Compensation: CancelGroundTransport → CancelHotel → CancelReturnFlight → CancelOutboundFlight → ReleasePayment
-# Trigger: CustomerName.Contains("TIMEOUT") → 65s delay in IssueInsuranceConsumer
+# Trigger: CustomerName.StartsWith("TIMEOUT") → 65s delay in IssueInsuranceConsumer
 POST {{Trip.API_HostAddress}}/api/trips
 Content-Type: application/json
 
@@ -788,11 +788,11 @@ Content-Type: application/json
   }
 }
 
-### TIMEOUT: HotelConfirmationTimedOut (hotelName contains "CONFIRM_TIMEOUT")
+### TIMEOUT: HotelConfirmationTimedOut (hotelName starts with "CONFIRM_TIMEOUT")
 # Tests Quartz scheduler - hotel confirmation delays 16 minutes, timeout fires after 15 minutes
 # Expected: SAGA transitions to CompensatingHotel → ... → Failed
 # Compensation: CancelHotel → CancelReturnFlight → CancelOutboundFlight → ReleasePayment
-# Trigger: HotelName.Contains("CONFIRM_TIMEOUT") → 16min delay in ConfirmHotelConsumer
+# Trigger: HotelName.StartsWith("CONFIRM_TIMEOUT") → 16min delay in ConfirmHotelConsumer
 # WARNING: This test takes 15+ minutes to complete!
 POST {{Trip.API_HostAddress}}/api/trips
 Content-Type: application/json
@@ -858,8 +858,11 @@ GET {{Trip.API_HostAddress}}/api/trips/00000000-0000-0000-0000-000000000000
 Accept: application/json
 
 ### Cancel a trip
-POST {{Trip.API_HostAddress}}/api/trips/eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee/cancel
+POST {{Trip.API_HostAddress}}/api/trips/D4662EE9-0240-4FA6-8604-8E07AEFD0A18/cancel
 Content-Type: application/json
+{
+  "Reason": "testing trip cancelation"
+}
 
 ### Health check
 GET {{Trip.API_HostAddress}}/health

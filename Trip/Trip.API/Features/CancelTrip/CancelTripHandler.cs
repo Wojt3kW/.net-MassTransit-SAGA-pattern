@@ -1,8 +1,8 @@
 using MassTransit;
 using MediatR;
 using Trip.Application.Abstractions;
+using Trip.Contracts.Events;
 using Trip.Domain.Entities;
-using Trip.Contracts.Commands;
 
 namespace Trip.API.Features.CancelTrip;
 
@@ -29,7 +29,7 @@ public class CancelTripHandler : IRequestHandler<CancelTripCommand, bool>
 
         // Publish cancellation request to SAGA
         await _publishEndpoint.Publish(
-            new CancelTripBooking(request.TripId, request.Reason),
+            new TripBookingCancelled(request.TripId, request.Reason, DateTime.UtcNow),
             cancellationToken);
 
         return true;

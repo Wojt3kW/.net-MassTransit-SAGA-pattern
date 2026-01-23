@@ -32,8 +32,8 @@ public class IssueInsuranceConsumer : IConsumer<IssueInsuranceCommand>
             return;
         }
 
-        // SIMULATION: If customer name contains "TIMEOUT" - simulate timeout
-        if (command.CustomerName.Contains("TIMEOUT"))
+        // SIMULATION: If customer name starts with "TIMEOUT" - simulate timeout
+        if (command.CustomerName.StartsWith("TIMEOUT"))
         {
             await Task.Delay(TimeSpan.FromSeconds(65), context.CancellationToken);
         }

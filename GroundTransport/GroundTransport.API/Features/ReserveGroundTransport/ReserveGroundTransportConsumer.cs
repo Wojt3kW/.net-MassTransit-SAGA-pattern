@@ -32,8 +32,8 @@ public class ReserveGroundTransportConsumer : IConsumer<ReserveGroundTransportCo
             return;
         }
 
-        // SIMULATION: If type contains "TIMEOUT" - simulate a timeout
-        if (command.Type.Contains("TIMEOUT"))
+        // SIMULATION: If type starts with "TIMEOUT" - simulate a timeout
+        if (command.Type.StartsWith("TIMEOUT"))
         {
             await Task.Delay(TimeSpan.FromSeconds(65), context.CancellationToken);
         }

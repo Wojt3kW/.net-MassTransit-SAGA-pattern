@@ -45,8 +45,8 @@ public class ConfirmHotelConsumer : IConsumer<ConfirmHotelCommand>
             return;
         }
 
-        // SIMULATION: If hotel name contains "CONFIRM_TIMEOUT" - simulate timeout
-        if (reservation.HotelName.Contains("CONFIRM_TIMEOUT", StringComparison.OrdinalIgnoreCase))
+        // SIMULATION: If hotel name starts with "CONFIRM_TIMEOUT" - simulate timeout
+        if (reservation.HotelName.StartsWith("CONFIRM_TIMEOUT", StringComparison.OrdinalIgnoreCase))
         {
             await Task.Delay(TimeSpan.FromMinutes(16), context.CancellationToken);
         }

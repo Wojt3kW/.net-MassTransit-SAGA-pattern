@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using TripBooking.Saga.Persistence;
 
@@ -11,9 +12,11 @@ using TripBooking.Saga.Persistence;
 namespace TripBooking.Saga.Migrations
 {
     [DbContext(typeof(TripBookingSagaDbContext))]
-    partial class TripBookingSagaDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260123192846_Alter_TripBookingSagaState_Add_IsCancelledByUser")]
+    partial class Alter_TripBookingSagaState_Add_IsCancelledByUser
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

@@ -168,5 +168,8 @@ namespace TripBooking.Saga.States
 
         /// <summary>Timestamp when the saga completed or failed.</summary>
         public DateTime? CompletedAt { get; set; }
+
+        /// <summary>Indicates whether the saga was cancelled by the user.</summary>
+        public bool IsCancelledByUser { get; set; }
     }
 }
