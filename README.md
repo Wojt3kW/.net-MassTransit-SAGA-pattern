@@ -173,8 +173,9 @@ dotnet run --project "SAGA pattern.AppHost"
 7. ✅ **Implement timeouts** - Quartz scheduler with all 8 timeouts!
 8. ✅ **User Cancellation** - Cancel during booking with IsCancelledByUser flag!
 9. ✅ **Angular Dashboard** - Real-time monitoring with SSE!
-10. 🎯 Implement Manual Review State
-11. 🎯 Implement Inbox/Outbox patterns
+10. ✅ Implement Inbox/Outbox patterns
+11. 🎯 Implement Manual Review State
+12. 🎯 Implement Post-Completion Refund
 
 ## Testing
 
