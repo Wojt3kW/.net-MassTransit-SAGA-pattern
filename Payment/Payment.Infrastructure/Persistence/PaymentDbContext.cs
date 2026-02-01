@@ -1,3 +1,4 @@
+using MassTransit;
 using Microsoft.EntityFrameworkCore;
 using Payment.Domain.Entities;
 
@@ -49,5 +50,10 @@ public class PaymentDbContext : DbContext
             entity.HasIndex(e => e.CustomerId);
             entity.HasIndex(e => new { e.CustomerId, e.IsDefault });
         });
+
+        // MassTransit Inbox/Outbox tables for message idempotency and transactional outbox
+        modelBuilder.AddInboxStateEntity();
+        modelBuilder.AddOutboxMessageEntity();
+        modelBuilder.AddOutboxStateEntity();
     }
 }

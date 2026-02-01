@@ -3,17 +3,20 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
-using Notification.Infrastructure.Persistence;
+using TripBooking.Saga.Persistence;
 
 #nullable disable
 
-namespace Notification.Infrastructure.Migrations
+namespace TripBooking.Saga.Migrations
 {
-    [DbContext(typeof(NotificationDbContext))]
-    partial class NotificationDbContextModelSnapshot : ModelSnapshot
+    [DbContext(typeof(TripBookingSagaDbContext))]
+    [Migration("20260201134123_AddInboxOutbox")]
+    partial class AddInboxOutbox
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -192,68 +195,216 @@ namespace Notification.Infrastructure.Migrations
                     b.ToTable("OutboxState");
                 });
 
-            modelBuilder.Entity("Notification.Domain.Entities.NotificationRecord", b =>
+            modelBuilder.Entity("TripBooking.Saga.States.TripBookingSagaState", b =>
                 {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
+                    b.Property<Guid>("CorrelationId")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<string>("Body")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                    b.Property<DateTime>("CheckIn")
+                        .HasPrecision(3)
+                        .HasColumnType("datetime2(3)");
 
-                    b.Property<string>("Channel")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)");
+                    b.Property<DateTime>("CheckOut")
+                        .HasPrecision(3)
+                        .HasColumnType("datetime2(3)");
+
+                    b.Property<DateTime?>("CompletedAt")
+                        .HasPrecision(3)
+                        .HasColumnType("datetime2(3)");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasPrecision(3)
                         .HasColumnType("datetime2(3)");
 
-                    b.Property<Guid>("CustomerId")
-                        .HasColumnType("uniqueidentifier");
+                    b.Property<string>("Currency")
+                        .IsRequired()
+                        .HasMaxLength(3)
+                        .HasColumnType("nvarchar(3)");
 
-                    b.Property<string>("ErrorMessage")
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
+                    b.Property<string>("CurrentState")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
 
-                    b.Property<string>("Recipient")
+                    b.Property<string>("CustomerEmail")
                         .IsRequired()
                         .HasMaxLength(256)
                         .HasColumnType("nvarchar(256)");
 
-                    b.Property<DateTime?>("SentAt")
+                    b.Property<Guid>("CustomerId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("CustomerName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<DateTime>("DepartureDate")
                         .HasPrecision(3)
                         .HasColumnType("datetime2(3)");
 
-                    b.Property<string>("Status")
+                    b.Property<string>("Destination")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("FailureReason")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("GroundTransportDropoffLocation")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<Guid?>("GroundTransportId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("GroundTransportPickupLocation")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<Guid?>("GroundTransportTimeoutToken")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("GroundTransportType")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<Guid?>("HotelConfirmationTimeoutToken")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("HotelId")
+                        .HasMaxLength(50)
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("HotelName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<Guid?>("HotelReservationId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("HotelReservationTimeoutToken")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("IncludeGroundTransport")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IncludeInsurance")
+                        .HasColumnType("bit");
+
+                    b.Property<Guid?>("InsurancePolicyId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("InsuranceTimeoutToken")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("IsCancelledByUser")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsGroundTransportReserved")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsHotelConfirmed")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsHotelReserved")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsInsuranceIssued")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsOutboundFlightReserved")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsPaymentAuthorised")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsPaymentCaptured")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsReturnFlightReserved")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("NumberOfGuests")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Origin")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("OutboundCarrier")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<Guid?>("OutboundFlightId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("OutboundFlightNumber")
                         .IsRequired()
                         .HasMaxLength(20)
                         .HasColumnType("nvarchar(20)");
 
-                    b.Property<string>("Subject")
+                    b.Property<Guid?>("OutboundFlightTimeoutToken")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("PaymentAuthorisationTimeoutToken")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("PaymentCaptureRetryCount")
+                        .HasColumnType("int");
+
+                    b.Property<Guid?>("PaymentCaptureTimeoutToken")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("PaymentMethodId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("PaymentTransactionId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("ReturnCarrier")
                         .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<DateTime>("ReturnDate")
+                        .HasPrecision(3)
+                        .HasColumnType("datetime2(3)");
+
+                    b.Property<Guid?>("ReturnFlightId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("ReturnFlightNumber")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<Guid?>("ReturnFlightTimeoutToken")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("TotalAmount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
 
                     b.Property<Guid>("TripId")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<string>("Type")
-                        .IsRequired()
-                        .HasMaxLength(30)
-                        .HasColumnType("nvarchar(30)");
+                    b.Property<Guid?>("UserInactivityTimeoutToken")
+                        .HasColumnType("uniqueidentifier");
 
-                    b.HasKey("Id");
+                    b.HasKey("CorrelationId");
+
+                    b.HasIndex("CurrentState");
 
                     b.HasIndex("CustomerId");
 
-                    b.HasIndex("Status");
-
                     b.HasIndex("TripId");
 
-                    b.ToTable("Notifications");
+                    b.ToTable("TripBookingSagaStates");
                 });
 
             modelBuilder.Entity("MassTransit.EntityFrameworkCoreIntegration.OutboxMessage", b =>

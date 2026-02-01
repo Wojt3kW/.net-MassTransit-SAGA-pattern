@@ -32,13 +32,23 @@ builder.Services.AddDbContext<GroundTransportDbContext>(options =>
 // Repositories
 builder.Services.AddScoped<ITransportReservationRepository, TransportReservationRepository>();
 
-// MassTransit with RabbitMQ
+// MassTransit with RabbitMQ and Entity Framework Outbox
 builder.Services.AddMassTransit(x =>
 {
     x.SetKebabCaseEndpointNameFormatter();
 
     x.AddConsumer<ReserveGroundTransportConsumer>();
     x.AddConsumer<CancelGroundTransportConsumer>();
+
+    x.AddEntityFrameworkOutbox<GroundTransportDbContext>(o =>
+    {
+        o.UseSqlServer();
+    });
+
+    x.AddConfigureEndpointsCallback((context, name, cfg) =>
+    {
+        cfg.UseEntityFrameworkOutbox<GroundTransportDbContext>(context);
+    });
 
     x.UsingRabbitMq((context, cfg) =>
     {

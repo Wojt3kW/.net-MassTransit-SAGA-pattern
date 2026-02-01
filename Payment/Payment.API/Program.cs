@@ -35,7 +35,7 @@ builder.Services.AddDbContext<PaymentDbContext>(options =>
 builder.Services.AddScoped<IPaymentTransactionRepository, PaymentTransactionRepository>();
 builder.Services.AddScoped<IPaymentMethodRepository, PaymentMethodRepository>();
 
-// MassTransit with RabbitMQ
+// MassTransit with RabbitMQ and Entity Framework Outbox
 builder.Services.AddMassTransit(x =>
 {
     x.SetKebabCaseEndpointNameFormatter();
@@ -44,6 +44,16 @@ builder.Services.AddMassTransit(x =>
     x.AddConsumer<CapturePaymentConsumer>();
     x.AddConsumer<ReleasePaymentConsumer>();
     x.AddConsumer<RefundPaymentConsumer>();
+
+    x.AddEntityFrameworkOutbox<PaymentDbContext>(o =>
+    {
+        o.UseSqlServer();
+    });
+
+    x.AddConfigureEndpointsCallback((context, name, cfg) =>
+    {
+        cfg.UseEntityFrameworkOutbox<PaymentDbContext>(context);
+    });
 
     x.UsingRabbitMq((context, cfg) =>
     {

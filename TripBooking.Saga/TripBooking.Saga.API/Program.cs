@@ -28,7 +28,7 @@ builder.Services.AddDbContext<TripBookingSagaDbContext>(options =>
 
 Uri schedulerEndpoint = new Uri("queue:scheduler");
 
-// MassTransit with Saga State Machine - configure BEFORE Quartz
+// MassTransit with Saga State Machine and Entity Framework Outbox
 builder.Services.AddMassTransit(x =>
 {
     x.SetKebabCaseEndpointNameFormatter();
@@ -44,6 +44,16 @@ builder.Services.AddMassTransit(x =>
             r.ExistingDbContext<TripBookingSagaDbContext>();
             r.UseSqlServer();
         });
+
+    x.AddEntityFrameworkOutbox<TripBookingSagaDbContext>(o =>
+    {
+        o.UseSqlServer();
+    });
+
+    x.AddConfigureEndpointsCallback((context, name, cfg) =>
+    {
+        cfg.UseEntityFrameworkOutbox<TripBookingSagaDbContext>(context);
+    });
 
     x.UsingRabbitMq((context, cfg) =>
     {

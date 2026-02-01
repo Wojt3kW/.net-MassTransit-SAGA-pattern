@@ -38,13 +38,23 @@ builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssemblyContaining<Pr
 builder.Services.AddValidatorsFromAssemblyContaining<CreateTripCommandValidator>();
 builder.Services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
 
-// MassTransit with RabbitMQ
+// MassTransit with RabbitMQ and Entity Framework Outbox
 builder.Services.AddMassTransit(x =>
 {
     x.SetKebabCaseEndpointNameFormatter();
 
     // Register all consumers from this assembly
     x.AddConsumers(typeof(Program).Assembly);
+
+    x.AddEntityFrameworkOutbox<TripDbContext>(o =>
+    {
+        o.UseSqlServer();
+    });
+
+    x.AddConfigureEndpointsCallback((context, name, cfg) =>
+    {
+        cfg.UseEntityFrameworkOutbox<TripDbContext>(context);
+    });
 
     x.UsingRabbitMq((context, cfg) =>
     {

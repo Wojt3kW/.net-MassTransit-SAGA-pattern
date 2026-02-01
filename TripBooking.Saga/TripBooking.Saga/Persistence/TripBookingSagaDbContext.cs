@@ -1,4 +1,5 @@
-﻿using MassTransit.EntityFrameworkCoreIntegration;
+﻿using MassTransit;
+using MassTransit.EntityFrameworkCoreIntegration;
 using Microsoft.EntityFrameworkCore;
 using TripBooking.Saga.States;
 
@@ -16,6 +17,15 @@ namespace TripBooking.Saga.Persistence
         protected override IEnumerable<ISagaClassMap> Configurations
         {
             get { yield return new TripBookingSagaStateMap(); }
+        }
+
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            base.OnModelCreating(modelBuilder);
+
+            modelBuilder.AddInboxStateEntity();
+            modelBuilder.AddOutboxMessageEntity();
+            modelBuilder.AddOutboxStateEntity();
         }
     }
 }

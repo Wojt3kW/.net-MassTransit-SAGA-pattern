@@ -1,3 +1,4 @@
+using MassTransit;
 using Microsoft.EntityFrameworkCore;
 using Notification.Domain.Entities;
 
@@ -25,10 +26,15 @@ public class NotificationDbContext : DbContext
             entity.Property(e => e.ErrorMessage).HasMaxLength(500);
             entity.Property(e => e.CreatedAt).HasPrecision(3);
             entity.Property(e => e.SentAt).HasPrecision(3);
-            
+
             entity.HasIndex(e => e.TripId);
             entity.HasIndex(e => e.CustomerId);
             entity.HasIndex(e => e.Status);
         });
+
+        // MassTransit Inbox/Outbox tables for message idempotency and transactional outbox
+        modelBuilder.AddInboxStateEntity();
+        modelBuilder.AddOutboxMessageEntity();
+        modelBuilder.AddOutboxStateEntity();
     }
 }

@@ -31,7 +31,17 @@ export class TripService {
   readonly loading = signal(false);
   readonly error = signal<string | null>(null);
 
-  // Computed
+  // Computed - based on sagaStates for real-time SSE updates
+  readonly sagaCount = computed(() => this.sagaStates().length);
+  readonly sagaCompletedCount = computed(() => this.sagaStates().filter(s => s.currentState === 'Completed').length);
+  readonly sagaFailedCount = computed(() => this.sagaStates().filter(s => s.currentState === 'Failed').length);
+  readonly sagaCancelledCount = computed(() => this.sagaStates().filter(s => s.currentState === 'Cancelled').length);
+  readonly sagaTimedOutCount = computed(() => this.sagaStates().filter(s => s.currentState === 'TimedOut').length);
+  readonly sagaInProgressCount = computed(() => this.sagaStates().filter(s =>
+    !['Completed', 'Failed', 'Cancelled', 'TimedOut'].includes(s.currentState)
+  ).length);
+
+  // Legacy computed based on trips (for backwards compatibility)
   readonly tripCount = computed(() => this.trips().length);
   readonly completedCount = computed(() => this.trips().filter(t => t.status === 'Completed').length);
   readonly failedCount = computed(() => this.trips().filter(t => t.status === 'Failed').length);

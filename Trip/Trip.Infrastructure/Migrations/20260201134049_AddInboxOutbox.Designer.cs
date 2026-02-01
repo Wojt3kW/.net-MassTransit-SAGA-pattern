@@ -3,17 +3,20 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
-using Notification.Infrastructure.Persistence;
+using Trip.Infrastructure.Persistence;
 
 #nullable disable
 
-namespace Notification.Infrastructure.Migrations
+namespace Trip.Infrastructure.Migrations
 {
-    [DbContext(typeof(NotificationDbContext))]
-    partial class NotificationDbContextModelSnapshot : ModelSnapshot
+    [DbContext(typeof(TripDbContext))]
+    [Migration("20260201134049_AddInboxOutbox")]
+    partial class AddInboxOutbox
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -192,58 +195,73 @@ namespace Notification.Infrastructure.Migrations
                     b.ToTable("OutboxState");
                 });
 
-            modelBuilder.Entity("Notification.Domain.Entities.NotificationRecord", b =>
+            modelBuilder.Entity("Trip.Domain.Entities.TripBooking", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<string>("Body")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                    b.Property<DateTime?>("CancelledAt")
+                        .HasPrecision(3)
+                        .HasColumnType("datetime2(3)");
 
-                    b.Property<string>("Channel")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)");
+                    b.Property<DateTime?>("CompletedAt")
+                        .HasPrecision(3)
+                        .HasColumnType("datetime2(3)");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasPrecision(3)
                         .HasColumnType("datetime2(3)");
 
-                    b.Property<Guid>("CustomerId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("ErrorMessage")
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
-
-                    b.Property<string>("Recipient")
+                    b.Property<string>("CustomerEmail")
                         .IsRequired()
                         .HasMaxLength(256)
                         .HasColumnType("nvarchar(256)");
 
-                    b.Property<DateTime?>("SentAt")
-                        .HasPrecision(3)
-                        .HasColumnType("datetime2(3)");
+                    b.Property<Guid>("CustomerId")
+                        .HasColumnType("uniqueidentifier");
 
-                    b.Property<string>("Status")
+                    b.Property<string>("CustomerName")
                         .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)");
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
 
-                    b.Property<string>("Subject")
-                        .IsRequired()
+                    b.Property<string>("FailureReason")
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
 
-                    b.Property<Guid>("TripId")
-                        .HasColumnType("uniqueidentifier");
+                    b.Property<string>("GroundTransportConfirmation")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
 
-                    b.Property<string>("Type")
+                    b.Property<string>("HotelConfirmation")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("InsurancePolicyNumber")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("OutboundFlightConfirmation")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("PaymentConfirmation")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("ReturnFlightConfirmation")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("Status")
                         .IsRequired()
-                        .HasMaxLength(30)
-                        .HasColumnType("nvarchar(30)");
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<decimal>("TotalAmount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
 
                     b.HasKey("Id");
 
@@ -251,9 +269,7 @@ namespace Notification.Infrastructure.Migrations
 
                     b.HasIndex("Status");
 
-                    b.HasIndex("TripId");
-
-                    b.ToTable("Notifications");
+                    b.ToTable("TripBookings");
                 });
 
             modelBuilder.Entity("MassTransit.EntityFrameworkCoreIntegration.OutboxMessage", b =>

@@ -33,7 +33,7 @@ builder.Services.AddDbContext<NotificationDbContext>(options =>
 // Repositories
 builder.Services.AddScoped<INotificationRepository, NotificationRepository>();
 
-// MassTransit with RabbitMQ
+// MassTransit with RabbitMQ and Entity Framework Outbox
 builder.Services.AddMassTransit(x =>
 {
     x.SetKebabCaseEndpointNameFormatter();
@@ -41,6 +41,16 @@ builder.Services.AddMassTransit(x =>
     x.AddConsumer<SendBookingConfirmationConsumer>();
     x.AddConsumer<SendBookingFailureConsumer>();
     x.AddConsumer<SendCancellationConsumer>();
+
+    x.AddEntityFrameworkOutbox<NotificationDbContext>(o =>
+    {
+        o.UseSqlServer();
+    });
+
+    x.AddConfigureEndpointsCallback((context, name, cfg) =>
+    {
+        cfg.UseEntityFrameworkOutbox<NotificationDbContext>(context);
+    });
 
     x.UsingRabbitMq((context, cfg) =>
     {
@@ -67,7 +77,7 @@ if (app.Environment.IsDevelopment())
     {
         options.SwaggerEndpoint("/openapi/v1.json", "Notification API");
     });
-    
+
     // Redirect root to Swagger UI
     app.MapGet("/", () => Results.Redirect("/swagger")).ExcludeFromDescription();
 }

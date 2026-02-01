@@ -7,7 +7,7 @@
           <mat-icon>flight_takeoff</mat-icon>
         </div>
         <div class="stat-info">
-          <span class="stat-value">{{ tripService.tripCount() }}</span>
+          <span class="stat-value">{{ tripService.sagaCount() }}</span>
           <span class="stat-label">Total Trips</span>
         </div>
       </mat-card-content>
@@ -19,7 +19,7 @@
           <mat-icon>hourglass_empty</mat-icon>
         </div>
         <div class="stat-info">
-          <span class="stat-value">{{ tripService.pendingCount() }}</span>
+          <span class="stat-value">{{ tripService.sagaInProgressCount() }}</span>
           <span class="stat-label">In Progress</span>
         </div>
       </mat-card-content>
@@ -31,7 +31,7 @@
           <mat-icon>check_circle</mat-icon>
         </div>
         <div class="stat-info">
-          <span class="stat-value">{{ tripService.completedCount() }}</span>
+          <span class="stat-value">{{ tripService.sagaCompletedCount() }}</span>
           <span class="stat-label">Completed</span>
         </div>
       </mat-card-content>
@@ -43,7 +43,7 @@
           <mat-icon>error</mat-icon>
         </div>
         <div class="stat-info">
-          <span class="stat-value">{{ tripService.failedCount() }}</span>
+          <span class="stat-value">{{ tripService.sagaFailedCount() }}</span>
           <span class="stat-label">Failed</span>
         </div>
       </mat-card-content>
@@ -55,7 +55,7 @@
           <mat-icon>cancel</mat-icon>
         </div>
         <div class="stat-info">
-          <span class="stat-value">{{ tripService.cancelledCount() }}</span>
+          <span class="stat-value">{{ tripService.sagaCancelledCount() }}</span>
           <span class="stat-label">Cancelled</span>
         </div>
       </mat-card-content>

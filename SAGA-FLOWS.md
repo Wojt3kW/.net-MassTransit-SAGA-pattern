@@ -714,6 +714,9 @@ RefundPayment ──► PaymentRefunded (minus any fees)
 | Timeouts (Quartz) | ✅ Implemented | All 8 timeouts with compensation |
 | User Cancellation | ✅ Implemented | IsCancelledByUser flag, Cancelled terminal state |
 | Angular Dashboard | ✅ Implemented | Real-time SSE monitoring, create trip wizard |
+| **Inbox Pattern** | ✅ Implemented | MassTransit.EntityFrameworkCore - idempotency |
+| **Outbox Pattern** | ✅ Implemented | MassTransit.EntityFrameworkCore - at-least-once delivery |
+| **Distributed Tracing** | ✅ Implemented | OpenTelemetry + Jaeger (via Aspire) |
 | Post-Completion Refund | 🎯 TODO | RefundPayment flow |
 | Manual Review State | 🎯 TODO | For edge cases |
 

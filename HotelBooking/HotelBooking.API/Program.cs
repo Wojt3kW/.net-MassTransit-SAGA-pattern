@@ -33,7 +33,7 @@ builder.Services.AddDbContext<HotelBookingDbContext>(options =>
 // Repositories
 builder.Services.AddScoped<IHotelReservationRepository, HotelReservationRepository>();
 
-// MassTransit with RabbitMQ
+// MassTransit with RabbitMQ and Entity Framework Outbox
 builder.Services.AddMassTransit(x =>
 {
     x.SetKebabCaseEndpointNameFormatter();
@@ -41,6 +41,16 @@ builder.Services.AddMassTransit(x =>
     x.AddConsumer<ReserveHotelConsumer>();
     x.AddConsumer<ConfirmHotelConsumer>();
     x.AddConsumer<CancelHotelConsumer>();
+
+    x.AddEntityFrameworkOutbox<HotelBookingDbContext>(o =>
+    {
+        o.UseSqlServer();
+    });
+
+    x.AddConfigureEndpointsCallback((context, name, cfg) =>
+    {
+        cfg.UseEntityFrameworkOutbox<HotelBookingDbContext>(context);
+    });
 
     x.UsingRabbitMq((context, cfg) =>
     {

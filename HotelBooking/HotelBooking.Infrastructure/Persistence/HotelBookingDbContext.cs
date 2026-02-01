@@ -1,4 +1,5 @@
 using HotelBooking.Domain.Entities;
+using MassTransit;
 using Microsoft.EntityFrameworkCore;
 
 namespace HotelBooking.Infrastructure.Persistence;
@@ -35,5 +36,10 @@ public class HotelBookingDbContext : DbContext
             entity.HasIndex(e => e.HotelId);
             entity.HasIndex(e => e.Status);
         });
+
+        // MassTransit Inbox/Outbox tables for message idempotency and transactional outbox
+        modelBuilder.AddInboxStateEntity();
+        modelBuilder.AddOutboxMessageEntity();
+        modelBuilder.AddOutboxStateEntity();
     }
 }

@@ -32,13 +32,23 @@ builder.Services.AddDbContext<InsuranceDbContext>(options =>
 // Repositories
 builder.Services.AddScoped<IInsurancePolicyRepository, InsurancePolicyRepository>();
 
-// MassTransit with RabbitMQ
+// MassTransit with RabbitMQ and Entity Framework Outbox
 builder.Services.AddMassTransit(x =>
 {
     x.SetKebabCaseEndpointNameFormatter();
 
     x.AddConsumer<IssueInsuranceConsumer>();
     x.AddConsumer<CancelInsuranceConsumer>();
+
+    x.AddEntityFrameworkOutbox<InsuranceDbContext>(o =>
+    {
+        o.UseSqlServer();
+    });
+
+    x.AddConfigureEndpointsCallback((context, name, cfg) =>
+    {
+        cfg.UseEntityFrameworkOutbox<InsuranceDbContext>(context);
+    });
 
     x.UsingRabbitMq((context, cfg) =>
     {
@@ -65,7 +75,7 @@ if (app.Environment.IsDevelopment())
     {
         options.SwaggerEndpoint("/openapi/v1.json", "Insurance API");
     });
-    
+
     // Redirect root to Swagger UI
     app.MapGet("/", () => Results.Redirect("/swagger")).ExcludeFromDescription();
 }

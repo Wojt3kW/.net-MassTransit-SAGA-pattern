@@ -88,7 +88,6 @@ public static class Extensions
                     .AddHttpClientInstrumentation()
                     .AddSqlClientInstrumentation(options =>
                     {
-                        options.SetDbStatementForText = true;
                         options.RecordException = true;
                     })
                     .AddQuartzInstrumentation();

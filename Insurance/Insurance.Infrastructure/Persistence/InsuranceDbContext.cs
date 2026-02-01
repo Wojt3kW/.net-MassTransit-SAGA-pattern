@@ -1,4 +1,5 @@
 using Insurance.Domain.Entities;
+using MassTransit;
 using Microsoft.EntityFrameworkCore;
 
 namespace Insurance.Infrastructure.Persistence;
@@ -28,11 +29,16 @@ public class InsuranceDbContext : DbContext
             entity.Property(e => e.CreatedAt).HasPrecision(3);
             entity.Property(e => e.IssuedAt).HasPrecision(3);
             entity.Property(e => e.CancelledAt).HasPrecision(3);
-            
+
             entity.HasIndex(e => e.TripId);
             entity.HasIndex(e => e.CustomerId);
             entity.HasIndex(e => e.PolicyNumber);
             entity.HasIndex(e => e.Status);
         });
+
+        // MassTransit Inbox/Outbox tables for message idempotency and transactional outbox
+        modelBuilder.AddInboxStateEntity();
+        modelBuilder.AddOutboxMessageEntity();
+        modelBuilder.AddOutboxStateEntity();
     }
 }

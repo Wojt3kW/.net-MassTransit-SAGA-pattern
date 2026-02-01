@@ -42,7 +42,7 @@ public class ReserveHotelConsumer : IConsumer<ReserveHotelCommand>
         var nights = (command.CheckOut - command.CheckIn).Days;
 
         // Simulate hotel reservation (in real scenario, call external API)
-        await Task.Delay(TimeSpan.FromSeconds(10));
+        await Task.Delay(TimeSpan.FromSeconds(5));
 
         var reservation = new HotelReservation
         {

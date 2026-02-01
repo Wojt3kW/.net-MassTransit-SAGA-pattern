@@ -1,3 +1,4 @@
+using MassTransit;
 using Microsoft.EntityFrameworkCore;
 using Trip.Domain.Entities;
 
@@ -34,5 +35,10 @@ public class TripDbContext : DbContext
             entity.HasIndex(e => e.CustomerId);
             entity.HasIndex(e => e.Status);
         });
+
+        // MassTransit Inbox/Outbox tables for message idempotency and transactional outbox
+        modelBuilder.AddInboxStateEntity();
+        modelBuilder.AddOutboxMessageEntity();
+        modelBuilder.AddOutboxStateEntity();
     }
 }

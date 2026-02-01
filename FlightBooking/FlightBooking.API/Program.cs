@@ -33,7 +33,7 @@ builder.Services.AddDbContext<FlightBookingDbContext>(options =>
 // Repositories
 builder.Services.AddScoped<IFlightReservationRepository, FlightReservationRepository>();
 
-// MassTransit with RabbitMQ
+// MassTransit with RabbitMQ and Entity Framework Outbox
 builder.Services.AddMassTransit(x =>
 {
     x.SetKebabCaseEndpointNameFormatter();
@@ -41,6 +41,18 @@ builder.Services.AddMassTransit(x =>
     x.AddConsumer<ReserveOutboundFlightConsumer>();
     x.AddConsumer<ReserveReturnFlightConsumer>();
     x.AddConsumer<CancelFlightConsumer>();
+
+    // Entity Framework Outbox for transactional message delivery
+    x.AddEntityFrameworkOutbox<FlightBookingDbContext>(o =>
+    {
+        o.UseSqlServer();
+    });
+
+    // Apply Outbox to all endpoints for message idempotency
+    x.AddConfigureEndpointsCallback((context, name, cfg) =>
+    {
+        cfg.UseEntityFrameworkOutbox<FlightBookingDbContext>(context);
+    });
 
     x.UsingRabbitMq((context, cfg) =>
     {
