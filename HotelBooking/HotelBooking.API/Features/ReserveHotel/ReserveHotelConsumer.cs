@@ -29,7 +29,7 @@ public class ReserveHotelConsumer : IConsumer<ReserveHotelCommand>
             await context.Publish(new HotelReservationFailed(
                 command.CorrelationId,
                 command.TripId,
-                $"Simulated: No rooms available at {command.HotelName}"));
+                $"Simulated error: No hotel with name {command.HotelName}"));
             return;
         }
 
@@ -40,6 +40,9 @@ public class ReserveHotelConsumer : IConsumer<ReserveHotelCommand>
         }
 
         var nights = (command.CheckOut - command.CheckIn).Days;
+
+        // Simulate hotel reservation (in real scenario, call external API)
+        await Task.Delay(TimeSpan.FromSeconds(10));
 
         var reservation = new HotelReservation
         {

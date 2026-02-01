@@ -1,0 +1,368 @@
+<div class="details-container">
+  @if (loading()) {
+    <div class="loading-overlay">
+      <mat-spinner diameter="60"></mat-spinner>
+      <p>Loading trip details...</p>
+    </div>
+  }
+
+  @if (error()) {
+    <mat-card class="error-card">
+      <mat-icon>error</mat-icon>
+      <h2>Error Loading Trip</h2>
+      <p>{{ error() }}</p>
+      <button mat-raised-button color="primary" routerLink="/">Back to Dashboard</button>
+    </mat-card>
+  }
+
+  @if (sagaState()) {
+    <!-- Header Card -->
+    <mat-card class="header-card">
+      <div class="header-content">
+        <div class="header-info">
+          <h1>
+            <mat-icon>flight</mat-icon>
+            Trip Booking Details
+          </h1>
+          <p class="trip-id">{{ tripId }}</p>
+        </div>
+        <div class="header-actions">
+          <mat-chip [style.background-color]="getStateColor()">
+            {{ sagaState()?.currentState }}
+          </mat-chip>
+          @if (canCancel()) {
+            <button mat-raised-button color="warn" (click)="cancelTrip()">
+              <mat-icon>cancel</mat-icon> Cancel Trip
+            </button>
+          }
+        </div>
+      </div>
+
+      <!-- Progress Bar -->
+      <mat-progress-bar
+        [mode]="isInProgress() ? 'indeterminate' : 'determinate'"
+        [value]="getProgress()"
+        [color]="getProgressColor()">
+      </mat-progress-bar>
+    </mat-card>
+
+    <!-- SAGA State Timeline -->
+    <mat-card class="timeline-card">
+      <mat-card-header>
+        <mat-card-title>SAGA Progress</mat-card-title>
+        <mat-card-subtitle>Step-by-step execution status</mat-card-subtitle>
+      </mat-card-header>
+      <mat-card-content>
+        <div class="saga-timeline">
+          @for (step of sagaSteps(); track step.name) {
+            <div class="timeline-step" [class.active]="step.active" [class.completed]="step.completed" [class.failed]="step.failed">
+              <div class="step-icon">
+                <mat-icon>{{ step.icon }}</mat-icon>
+              </div>
+              <div class="step-info">
+                <span class="step-name">{{ step.name }}</span>
+                <span class="step-status">{{ step.status }}</span>
+              </div>
+              @if (!$last) {
+                <div class="step-connector" [class.completed]="step.completed"></div>
+              }
+            </div>
+          }
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <!-- SAGA Flow Visualization -->
+    <mat-card class="flow-card">
+      <mat-card-header>
+        <mat-card-title>
+          <mat-icon>schema</mat-icon>
+          SAGA Flow Visualization
+        </mat-card-title>
+        <mat-card-subtitle>Visual representation of the booking process and compensation</mat-card-subtitle>
+      </mat-card-header>
+      <mat-card-content>
+        <!-- Happy Path -->
+        <div class="flow-section">
+          <h3 class="flow-title">
+            <mat-icon>trending_flat</mat-icon>
+            Happy Path
+          </h3>
+          <div class="flow-diagram">
+            @for (step of sagaFlow().happyPath; track step.id; let last = $last) {
+              <div class="flow-step" [class]="'status-' + step.status">
+                <div class="flow-step-icon">
+                  <mat-icon>{{ step.icon }}</mat-icon>
+                </div>
+                <span class="flow-step-name">{{ step.name }}</span>
+                @if (step.status === 'failed') {
+                  <mat-icon class="status-indicator">error</mat-icon>
+                } @else if (step.status === 'completed') {
+                  <mat-icon class="status-indicator">check_circle</mat-icon>
+                } @else if (step.status === 'active') {
+                  <mat-icon class="status-indicator">pending</mat-icon>
+                }
+              </div>
+              @if (!last) {
+                <div class="flow-arrow" [class]="'status-' + step.status">
+                  <mat-icon>arrow_forward</mat-icon>
+                </div>
+              }
+            }
+          </div>
+        </div>
+
+        <!-- Compensation Path (only shown when failed/compensating) -->
+        @if (sagaFlow().showCompensation && sagaFlow().compensationPath.length > 0) {
+          <div class="flow-section compensation">
+            <h3 class="flow-title error">
+              <mat-icon>undo</mat-icon>
+              Compensation Path
+            </h3>
+            <div class="flow-diagram reverse">
+              @for (step of sagaFlow().compensationPath; track step.id; let last = $last) {
+                <div class="flow-step compensation" [class]="'status-' + step.status">
+                  <div class="flow-step-icon">
+                    <mat-icon>{{ step.icon }}</mat-icon>
+                  </div>
+                  <span class="flow-step-name">{{ step.name }}</span>
+                  @if (step.status === 'completed') {
+                    <mat-icon class="status-indicator">check_circle</mat-icon>
+                  } @else if (step.status === 'active') {
+                    <mat-icon class="status-indicator">pending</mat-icon>
+                  }
+                </div>
+                @if (!last) {
+                  <div class="flow-arrow compensation" [class]="'status-' + step.status">
+                    <mat-icon>arrow_forward</mat-icon>
+                  </div>
+                }
+              }
+            </div>
+          </div>
+        }
+
+        <!-- Legend -->
+        <div class="flow-legend">
+          <div class="legend-item">
+            <div class="legend-dot completed"></div>
+            <span>Completed</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-dot active"></div>
+            <span>In Progress</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-dot pending"></div>
+            <span>Pending</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-dot failed"></div>
+            <span>Failed</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-dot skipped"></div>
+            <span>Skipped</span>
+          </div>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <!-- Details Tabs -->
+    <mat-card class="details-card">
+      <mat-tab-group>
+        <!-- SAGA State Tab -->
+        <mat-tab>
+          <ng-template mat-tab-label>
+            <mat-icon>memory</mat-icon> SAGA State
+          </ng-template>
+          <div class="tab-content">
+            <div class="info-grid">
+              <div class="info-item">
+                <span class="label">Correlation ID</span>
+                <span class="value">{{ sagaState()?.correlationId }}</span>
+              </div>
+              <div class="info-item">
+                <span class="label">Customer</span>
+                <span class="value">{{ sagaState()?.customerName }} ({{ sagaState()?.customerEmail }})</span>
+              </div>
+              <div class="info-item">
+                <span class="label">Route</span>
+                <span class="value">{{ sagaState()?.origin }} → {{ sagaState()?.destination }}</span>
+              </div>
+              <div class="info-item">
+                <span class="label">Travel Dates</span>
+                <span class="value">{{ sagaState()?.departureDate | date:'MMM d, y' }} - {{ sagaState()?.returnDate | date:'MMM d, y' }}</span>
+              </div>
+              <div class="info-item">
+                <span class="label">Amount</span>
+                <span class="value amount">{{ sagaState()?.currency }} {{ sagaState()?.amount | number:'1.2-2' }}</span>
+              </div>
+              <div class="info-item">
+                <span class="label">Created</span>
+                <span class="value">{{ sagaState()?.createdAt | date:'medium' }}</span>
+              </div>
+              @if (sagaState()?.failureReason) {
+                <div class="info-item error">
+                  <span class="label">Failure Reason</span>
+                  <span class="value">{{ sagaState()?.failureReason }}</span>
+                </div>
+              }
+            </div>
+
+            <mat-divider></mat-divider>
+
+            <h3>Reservation IDs</h3>
+            <div class="reservations-grid">
+              <div class="reservation-chip">
+                <mat-icon>payment</mat-icon>
+                Payment: {{ sagaState()?.paymentTransactionId || 'Pending' }}
+              </div>
+              <div class="reservation-chip">
+                <mat-icon>flight_takeoff</mat-icon>
+                Outbound: {{ sagaState()?.outboundFlightReservationId || 'Pending' }}
+              </div>
+              <div class="reservation-chip">
+                <mat-icon>flight_land</mat-icon>
+                Return: {{ sagaState()?.returnFlightReservationId || 'Pending' }}
+              </div>
+              <div class="reservation-chip">
+                <mat-icon>hotel</mat-icon>
+                Hotel: {{ sagaState()?.hotelReservationId || 'Pending' }}
+              </div>
+              <div class="reservation-chip">
+                <mat-icon>directions_car</mat-icon>
+                Transport: {{ sagaState()?.groundTransportId || 'N/A' }}
+              </div>
+              <div class="reservation-chip">
+                <mat-icon>security</mat-icon>
+                Insurance: {{ sagaState()?.insurancePolicyId || 'Pending' }}
+              </div>
+            </div>
+          </div>
+        </mat-tab>
+
+        <!-- Flights Tab -->
+        <mat-tab>
+          <ng-template mat-tab-label>
+            <mat-icon>flight</mat-icon> Flights
+          </ng-template>
+          <div class="tab-content">
+            @if (flights().length > 0) {
+              <table mat-table [dataSource]="flights()" class="reservations-table">
+                <ng-container matColumnDef="type">
+                  <th mat-header-cell *matHeaderCellDef>Type</th>
+                  <td mat-cell *matCellDef="let flight">
+                    <mat-icon>{{ flight.isOutbound ? 'flight_takeoff' : 'flight_land' }}</mat-icon>
+                    {{ flight.isOutbound ? 'Outbound' : 'Return' }}
+                  </td>
+                </ng-container>
+                <ng-container matColumnDef="route">
+                  <th mat-header-cell *matHeaderCellDef>Route</th>
+                  <td mat-cell *matCellDef="let flight">{{ flight.origin }} → {{ flight.destination }}</td>
+                </ng-container>
+                <ng-container matColumnDef="flightNumber">
+                  <th mat-header-cell *matHeaderCellDef>Flight #</th>
+                  <td mat-cell *matCellDef="let flight">{{ flight.flightNumber }}</td>
+                </ng-container>
+                <ng-container matColumnDef="date">
+                  <th mat-header-cell *matHeaderCellDef>Date</th>
+                  <td mat-cell *matCellDef="let flight">{{ flight.departureDate | date:'MMM d, y' }}</td>
+                </ng-container>
+                <ng-container matColumnDef="status">
+                  <th mat-header-cell *matHeaderCellDef>Status</th>
+                  <td mat-cell *matCellDef="let flight">
+                    <mat-chip [class]="'status-' + flight.status.toLowerCase()">{{ flight.status }}</mat-chip>
+                  </td>
+                </ng-container>
+                <tr mat-header-row *matHeaderRowDef="['type', 'route', 'flightNumber', 'date', 'status']"></tr>
+                <tr mat-row *matRowDef="let row; columns: ['type', 'route', 'flightNumber', 'date', 'status']"></tr>
+              </table>
+            } @else {
+              <div class="empty-state">
+                <mat-icon>flight</mat-icon>
+                <p>No flight reservations yet</p>
+              </div>
+            }
+          </div>
+        </mat-tab>
+
+        <!-- Hotel Tab -->
+        <mat-tab>
+          <ng-template mat-tab-label>
+            <mat-icon>hotel</mat-icon> Hotel
+          </ng-template>
+          <div class="tab-content">
+            @if (hotel()) {
+              <div class="info-grid">
+                <div class="info-item">
+                  <span class="label">Hotel Name</span>
+                  <span class="value">{{ hotel()?.hotelName }}</span>
+                </div>
+                <div class="info-item">
+                  <span class="label">Check-in</span>
+                  <span class="value">{{ hotel()?.checkIn | date:'medium' }}</span>
+                </div>
+                <div class="info-item">
+                  <span class="label">Check-out</span>
+                  <span class="value">{{ hotel()?.checkOut | date:'medium' }}</span>
+                </div>
+                <div class="info-item">
+                  <span class="label">Guests</span>
+                  <span class="value">{{ hotel()?.numberOfGuests }}</span>
+                </div>
+                <div class="info-item">
+                  <span class="label">Status</span>
+                  <mat-chip [class]="'status-' + hotel()?.status?.toLowerCase()">{{ hotel()?.status }}</mat-chip>
+                </div>
+              </div>
+            } @else {
+              <div class="empty-state">
+                <mat-icon>hotel</mat-icon>
+                <p>No hotel reservation yet</p>
+              </div>
+            }
+          </div>
+        </mat-tab>
+
+        <!-- Payment Tab -->
+        <mat-tab>
+          <ng-template mat-tab-label>
+            <mat-icon>payment</mat-icon> Payment
+          </ng-template>
+          <div class="tab-content">
+            @if (payment()) {
+              <div class="info-grid">
+                <div class="info-item">
+                  <span class="label">Transaction ID</span>
+                  <span class="value">{{ payment()?.id }}</span>
+                </div>
+                <div class="info-item">
+                  <span class="label">Amount</span>
+                  <span class="value amount">{{ payment()?.currency }} {{ payment()?.amount | number:'1.2-2' }}</span>
+                </div>
+                <div class="info-item">
+                  <span class="label">Card</span>
+                  <span class="value">**** {{ payment()?.cardLast4 }}</span>
+                </div>
+                <div class="info-item">
+                  <span class="label">Status</span>
+                  <mat-chip [class]="'status-' + payment()?.status?.toLowerCase()">{{ payment()?.status }}</mat-chip>
+                </div>
+                <div class="info-item">
+                  <span class="label">Created</span>
+                  <span class="value">{{ payment()?.createdAt | date:'medium' }}</span>
+                </div>
+              </div>
+            } @else {
+              <div class="empty-state">
+                <mat-icon>payment</mat-icon>
+                <p>No payment transaction yet</p>
+              </div>
+            }
+          </div>
+        </mat-tab>
+      </mat-tab-group>
+    </mat-card>
+  }
+</div>

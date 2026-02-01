@@ -40,6 +40,9 @@ public class IssueInsuranceConsumer : IConsumer<IssueInsuranceCommand>
 
         var premium = CalculatePremium(command.TripTotalValue);
 
+        // Simulate issue insurance (in real scenario, call external API)
+        await Task.Delay(TimeSpan.FromSeconds(5));
+
         var policy = new InsurancePolicy
         {
             Id = Guid.NewGuid(),

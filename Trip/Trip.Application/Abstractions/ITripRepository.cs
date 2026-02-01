@@ -6,6 +6,12 @@ public interface ITripRepository
 {
     Task<TripBooking?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);
     Task<TripBooking> AddAsync(TripBooking tripBooking, CancellationToken cancellationToken = default);
+    Task<(IReadOnlyList<TripBooking> Items, int TotalCount)> GetAllAsync(
+        TripStatus? status = null,
+        Guid? customerId = null,
+        int page = 1,
+        int pageSize = 10,
+        CancellationToken cancellationToken = default);
 
     // Atomic field updates to prevent lost updates in concurrent scenarios
     Task<bool> UpdateOutboundFlightConfirmationAsync(Guid tripId, string confirmationCode, CancellationToken cancellationToken = default);

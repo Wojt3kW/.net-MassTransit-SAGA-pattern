@@ -2,6 +2,9 @@ namespace Trip.Contracts.DTOs;
 
 public record TripBookingStatusResponse(
     Guid TripId,
+    Guid? CustomerId,
+    string? CustomerEmail,
+    string? CustomerName,
     string Status,
     string? OutboundFlightStatus,
     string? ReturnFlightStatus,
@@ -9,6 +12,7 @@ public record TripBookingStatusResponse(
     string? GroundTransportStatus,
     string? InsuranceStatus,
     string? PaymentStatus,
+    decimal? TotalAmount,
     DateTime CreatedAt,
     DateTime? CompletedAt,
     string? FailureReason);

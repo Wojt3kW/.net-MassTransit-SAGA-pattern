@@ -1,0 +1,219 @@
+<div class="dashboard-container">
+  <!-- Stats Cards -->
+  <div class="stats-row">
+    <mat-card class="stat-card">
+      <mat-card-content>
+        <div class="stat-icon total">
+          <mat-icon>flight_takeoff</mat-icon>
+        </div>
+        <div class="stat-info">
+          <span class="stat-value">{{ tripService.tripCount() }}</span>
+          <span class="stat-label">Total Trips</span>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card class="stat-card">
+      <mat-card-content>
+        <div class="stat-icon pending">
+          <mat-icon>hourglass_empty</mat-icon>
+        </div>
+        <div class="stat-info">
+          <span class="stat-value">{{ tripService.pendingCount() }}</span>
+          <span class="stat-label">In Progress</span>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card class="stat-card">
+      <mat-card-content>
+        <div class="stat-icon completed">
+          <mat-icon>check_circle</mat-icon>
+        </div>
+        <div class="stat-info">
+          <span class="stat-value">{{ tripService.completedCount() }}</span>
+          <span class="stat-label">Completed</span>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card class="stat-card">
+      <mat-card-content>
+        <div class="stat-icon failed">
+          <mat-icon>error</mat-icon>
+        </div>
+        <div class="stat-info">
+          <span class="stat-value">{{ tripService.failedCount() }}</span>
+          <span class="stat-label">Failed</span>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card class="stat-card">
+      <mat-card-content>
+        <div class="stat-icon cancelled">
+          <mat-icon>cancel</mat-icon>
+        </div>
+        <div class="stat-info">
+          <span class="stat-value">{{ tripService.cancelledCount() }}</span>
+          <span class="stat-label">Cancelled</span>
+        </div>
+      </mat-card-content>
+    </mat-card>
+  </div>
+
+  <!-- Actions -->
+  <div class="actions-row">
+    <button mat-raised-button color="primary" routerLink="/create">
+      <mat-icon>add</mat-icon>
+      Create New Trip
+    </button>
+    <button mat-button (click)="refresh()">
+      <mat-icon>refresh</mat-icon>
+      Refresh
+    </button>
+    <button mat-button (click)="toggleMode()" [color]="useSSE ? 'accent' : 'primary'">
+      <mat-icon>{{ useSSE ? 'cloud_sync' : 'sync' }}</mat-icon>
+      {{ useSSE ? 'SSE Mode' : 'Polling Mode' }}
+    </button>
+    <span class="connection-status">
+      <mat-icon [class.spin]="!useSSE" [class.pulse]="useSSE">
+        {{ useSSE ? 'cloud_done' : 'sync' }}
+      </mat-icon>
+      {{ useSSE ? 'Real-time SSE' : 'Polling every 2s' }}
+    </span>
+  </div>
+
+  <!-- SAGA States Table -->
+  <mat-card class="table-card">
+    <mat-card-header>
+      <mat-card-title>
+        <mat-icon>timeline</mat-icon>
+        SAGA States
+      </mat-card-title>
+    </mat-card-header>
+    <mat-card-content>
+      @if (tripService.loading()) {
+        <div class="loading-container">
+          <mat-spinner diameter="40"></mat-spinner>
+        </div>
+      } @else {
+        <table mat-table [dataSource]="tripService.sagaStates()" class="saga-table">
+
+          <ng-container matColumnDef="state">
+            <th mat-header-cell *matHeaderCellDef>State</th>
+            <td mat-cell *matCellDef="let saga">
+              <mat-chip [style.background-color]="getStateColor(saga.currentState)">
+                {{ saga.currentState }}
+              </mat-chip>
+            </td>
+          </ng-container>
+
+          <ng-container matColumnDef="customer">
+            <th mat-header-cell *matHeaderCellDef>Customer</th>
+            <td mat-cell *matCellDef="let saga">
+              <div class="customer-info">
+                <span class="name">{{ saga.customerName }}</span>
+                <span class="email">{{ saga.customerEmail }}</span>
+              </div>
+            </td>
+          </ng-container>
+
+          <ng-container matColumnDef="route">
+            <th mat-header-cell *matHeaderCellDef>Route</th>
+            <td mat-cell *matCellDef="let saga">
+              <div class="route-info">
+                <mat-icon>flight_takeoff</mat-icon>
+                {{ saga.origin }} → {{ saga.destination }}
+              </div>
+            </td>
+          </ng-container>
+
+          <ng-container matColumnDef="dates">
+            <th mat-header-cell *matHeaderCellDef>Travel Dates</th>
+            <td mat-cell *matCellDef="let saga">
+              {{ saga.departureDate | date:'MMM d' }} - {{ saga.returnDate | date:'MMM d, y' }}
+            </td>
+          </ng-container>
+
+          <ng-container matColumnDef="progress">
+            <th mat-header-cell *matHeaderCellDef>Progress</th>
+            <td mat-cell *matCellDef="let saga">
+              <div class="progress-icons">
+                <mat-icon [class.done]="saga.isPaymentAuthorised"
+                          [matTooltip]="saga.isPaymentAuthorised ? 'Payment Authorised' : 'Payment Pending'">
+                  payment
+                </mat-icon>
+                <mat-icon [class.done]="saga.isOutboundFlightReserved"
+                          [matTooltip]="saga.isOutboundFlightReserved ? 'Outbound Reserved' : 'Outbound Pending'">
+                  flight_takeoff
+                </mat-icon>
+                <mat-icon [class.done]="saga.isReturnFlightReserved"
+                          [matTooltip]="saga.isReturnFlightReserved ? 'Return Reserved' : 'Return Pending'">
+                  flight_land
+                </mat-icon>
+                <mat-icon [class.done]="saga.isHotelConfirmed"
+                          [matTooltip]="saga.isHotelConfirmed ? 'Hotel Confirmed' : 'Hotel Pending'">
+                  hotel
+                </mat-icon>
+                @if (saga.includeGroundTransport) {
+                  <mat-icon [class.done]="saga.isGroundTransportReserved"
+                            [matTooltip]="saga.isGroundTransportReserved ? 'Transport Reserved' : 'Transport Pending'">
+                    directions_car
+                  </mat-icon>
+                }
+                @if (saga.includeInsurance) {
+                  <mat-icon [class.done]="saga.isInsuranceIssued"
+                            [matTooltip]="saga.isInsuranceIssued ? 'Insurance Issued' : 'Insurance Pending'">
+                    security
+                  </mat-icon>
+                }
+                <mat-icon [class.done]="saga.isPaymentCaptured"
+                          [matTooltip]="saga.isPaymentCaptured ? 'Payment Captured' : 'Capture Pending'">
+                  credit_score
+                </mat-icon>
+              </div>
+            </td>
+          </ng-container>
+
+          <ng-container matColumnDef="amount">
+            <th mat-header-cell *matHeaderCellDef>Amount</th>
+            <td mat-cell *matCellDef="let saga">
+              <strong>{{ saga.totalAmount | currency:saga.currency }}</strong>
+            </td>
+          </ng-container>
+
+          <ng-container matColumnDef="actions">
+            <th mat-header-cell *matHeaderCellDef>Actions</th>
+            <td mat-cell *matCellDef="let saga">
+              <button mat-icon-button [routerLink]="['/trip', saga.tripId]" matTooltip="View Details">
+                <mat-icon>visibility</mat-icon>
+              </button>
+              @if (!isTerminalState(saga.currentState)) {
+                <button mat-icon-button color="warn" (click)="cancelTrip(saga.tripId)" matTooltip="Cancel Trip">
+                  <mat-icon>cancel</mat-icon>
+                </button>
+              }
+            </td>
+          </ng-container>
+
+          <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+          <tr mat-row *matRowDef="let row; columns: displayedColumns;"
+              [class.compensating]="isCompensatingState(row.currentState)"
+              [class.terminal]="isTerminalState(row.currentState)">
+          </tr>
+        </table>
+
+        @if (tripService.sagaStates().length === 0) {
+          <div class="empty-state">
+            <mat-icon>inbox</mat-icon>
+            <p>No trip bookings yet</p>
+            <button mat-raised-button color="primary" routerLink="/create">
+              Create your first trip
+            </button>
+          </div>
+        }
+      }
+    </mat-card-content>
+  </mat-card>
+</div>

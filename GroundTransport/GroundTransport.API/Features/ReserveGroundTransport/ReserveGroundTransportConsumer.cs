@@ -28,7 +28,7 @@ public class ReserveGroundTransportConsumer : IConsumer<ReserveGroundTransportCo
             await context.Publish(new GroundTransportReservationFailed(
                 command.CorrelationId,
                 command.TripId,
-                "Simulated: No vehicles available"));
+                "Simulated error: No ground transport with given type."));
             return;
         }
 
@@ -44,6 +44,10 @@ public class ReserveGroundTransportConsumer : IConsumer<ReserveGroundTransportCo
             "carrental" => TransportType.CarRental,
             _ => TransportType.AirportTransfer
         };
+
+
+        // Simulate transport reservation (in real scenario, call external API)
+        await Task.Delay(TimeSpan.FromSeconds(5));
 
         var reservation = new TransportReservation
         {

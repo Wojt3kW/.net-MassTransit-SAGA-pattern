@@ -21,16 +21,20 @@ public class GetTripHandler : IRequestHandler<GetTripQuery, TripBookingStatusRes
             return null;
 
         return new TripBookingStatusResponse(
-            trip.Id,
-            trip.Status.ToString(),
-            trip.OutboundFlightConfirmation is not null ? "Confirmed" : "Pending",
-            trip.ReturnFlightConfirmation is not null ? "Confirmed" : "Pending",
-            trip.HotelConfirmation is not null ? "Confirmed" : "Pending",
-            trip.GroundTransportConfirmation is not null ? "Confirmed" : "NotRequested",
-            trip.InsurancePolicyNumber is not null ? "Issued" : "Pending",
-            trip.PaymentConfirmation is not null ? "Captured" : "Pending",
-            trip.CreatedAt,
-            trip.CompletedAt,
-            trip.FailureReason);
+            TripId: trip.Id,
+            CustomerId: trip.CustomerId,
+            CustomerEmail: trip.CustomerEmail,
+            CustomerName: trip.CustomerName,
+            Status: trip.Status.ToString(),
+            OutboundFlightStatus: trip.OutboundFlightConfirmation is not null ? "Confirmed" : "Pending",
+            ReturnFlightStatus: trip.ReturnFlightConfirmation is not null ? "Confirmed" : "Pending",
+            HotelStatus: trip.HotelConfirmation is not null ? "Confirmed" : "Pending",
+            GroundTransportStatus: trip.GroundTransportConfirmation is not null ? "Confirmed" : "NotRequested",
+            InsuranceStatus: trip.InsurancePolicyNumber is not null ? "Issued" : "Pending",
+            PaymentStatus: trip.PaymentConfirmation is not null ? "Captured" : "Pending",
+            CreatedAt: trip.CreatedAt,
+            CompletedAt: trip.CompletedAt,
+            FailureReason: trip.FailureReason,
+            TotalAmount: trip.TotalAmount);
     }
 }

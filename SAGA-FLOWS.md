@@ -713,6 +713,7 @@ RefundPayment ──► PaymentRefunded (minus any fees)
 | Payment Capture Failure | ✅ Implemented | Retry 3x + full compensation with IfElse |
 | Timeouts (Quartz) | ✅ Implemented | All 8 timeouts with compensation |
 | User Cancellation | ✅ Implemented | IsCancelledByUser flag, Cancelled terminal state |
+| Angular Dashboard | ✅ Implemented | Real-time SSE monitoring, create trip wizard |
 | Post-Completion Refund | 🎯 TODO | RefundPayment flow |
 | Manual Review State | 🎯 TODO | For edge cases |
 

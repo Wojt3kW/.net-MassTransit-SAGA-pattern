@@ -1,0 +1,286 @@
+<div class="container">
+  <mat-card>
+    <mat-card-header>
+      <mat-icon mat-card-avatar>flight_takeoff</mat-icon>
+      <mat-card-title>Create New Trip Booking</mat-card-title>
+      <mat-card-subtitle>Fill in the details to start a new SAGA</mat-card-subtitle>
+    </mat-card-header>
+
+    <mat-card-content>
+      <mat-stepper linear #stepper>
+
+        <!-- Step 1: Customer -->
+        <mat-step [stepControl]="customerForm">
+          <ng-template matStepLabel>Customer Details</ng-template>
+          <form [formGroup]="customerForm" class="step-form">
+            <mat-form-field appearance="outline">
+              <mat-label>Customer Name</mat-label>
+              <input matInput formControlName="customerName" placeholder="John Smith">
+              <mat-icon matSuffix>person</mat-icon>
+              <mat-hint>Set Customer Name = "FAIL" to simulate failure of insurance API, "TIMEOUT" for timeout</mat-hint>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>Email</mat-label>
+              <input matInput formControlName="customerEmail" type="email" placeholder="john@example.com">
+              <mat-icon matSuffix>email</mat-icon>
+            </mat-form-field>
+
+            <div class="step-actions">
+              <button mat-button routerLink="/">Cancel</button>
+              <button mat-raised-button color="primary" matStepperNext>
+                Next <mat-icon>arrow_forward</mat-icon>
+              </button>
+            </div>
+          </form>
+        </mat-step>
+
+        <!-- Step 2: Flights -->
+        <mat-step [stepControl]="flightsForm">
+          <ng-template matStepLabel>Flight Details</ng-template>
+          <form [formGroup]="flightsForm" class="step-form">
+
+            <h3><mat-icon>flight_takeoff</mat-icon> Outbound Flight</h3>
+            <div class="form-row">
+              <mat-form-field appearance="outline">
+                <mat-label>Origin</mat-label>
+                <input matInput formControlName="outboundOrigin" placeholder="LHR">
+              </mat-form-field>
+              <mat-form-field appearance="outline">
+                <mat-label>Destination</mat-label>
+                <input matInput formControlName="outboundDestination" placeholder="JFK">
+              </mat-form-field>
+            </div>
+            <div class="form-row">
+              <mat-form-field appearance="outline">
+                <mat-label>Flight Number</mat-label>
+                <input matInput formControlName="outboundFlightNumber" placeholder="BA178">
+                <mat-hint>Set Flight Number = "FAIL" to simulate failure of airline API or "TIMEOUT" to simulate timeout</mat-hint>
+              </mat-form-field>
+              <mat-form-field appearance="outline">
+                <mat-label>Carrier</mat-label>
+                <input matInput formControlName="outboundCarrier" placeholder="British Airways">
+              </mat-form-field>
+            </div>
+            <mat-form-field appearance="outline">
+              <mat-label>Departure Date</mat-label>
+              <input matInput [matDatepicker]="outboundPicker" formControlName="outboundDate">
+              <mat-datepicker-toggle matIconSuffix [for]="outboundPicker"></mat-datepicker-toggle>
+              <mat-datepicker #outboundPicker></mat-datepicker>
+            </mat-form-field>
+
+            <mat-divider></mat-divider>
+
+            <h3><mat-icon>flight_land</mat-icon> Return Flight</h3>
+            <div class="form-row">
+              <mat-form-field appearance="outline">
+                <mat-label>Origin</mat-label>
+                <input matInput formControlName="returnOrigin" placeholder="JFK">
+              </mat-form-field>
+              <mat-form-field appearance="outline">
+                <mat-label>Destination</mat-label>
+                <input matInput formControlName="returnDestination" placeholder="LHR">
+              </mat-form-field>
+            </div>
+            <div class="form-row">
+              <mat-form-field appearance="outline">
+                <mat-label>Flight Number</mat-label>
+                <input matInput formControlName="returnFlightNumber" placeholder="BA179">
+                <mat-hint>Set Flight Number = "FAIL" to simulate failure of airline API or "TIMEOUT" to simulate timeout</mat-hint>
+              </mat-form-field>
+              <mat-form-field appearance="outline">
+                <mat-label>Carrier</mat-label>
+                <input matInput formControlName="returnCarrier" placeholder="British Airways">
+              </mat-form-field>
+            </div>
+            <mat-form-field appearance="outline">
+              <mat-label>Return Date</mat-label>
+              <input matInput [matDatepicker]="returnPicker" formControlName="returnDate">
+              <mat-datepicker-toggle matIconSuffix [for]="returnPicker"></mat-datepicker-toggle>
+              <mat-datepicker #returnPicker></mat-datepicker>
+            </mat-form-field>
+
+            <div class="step-actions">
+              <button mat-button matStepperPrevious>
+                <mat-icon>arrow_back</mat-icon> Back
+              </button>
+              <button mat-raised-button color="primary" matStepperNext>
+                Next <mat-icon>arrow_forward</mat-icon>
+              </button>
+            </div>
+          </form>
+        </mat-step>
+
+        <!-- Step 3: Hotel -->
+        <mat-step [stepControl]="hotelForm">
+          <ng-template matStepLabel>Hotel Details</ng-template>
+          <form [formGroup]="hotelForm" class="step-form">
+
+            <mat-form-field appearance="outline">
+              <mat-label>Hotel Name</mat-label>
+              <input matInput formControlName="hotelName" placeholder="The Plaza Hotel">
+              <mat-icon matSuffix>hotel</mat-icon>
+              <mat-hint>Set Hotel Name = "FAIL", "TIMEOUT" or "CONFIRM_TIMEOUT" to simulate failure or timeout of hotel booking API</mat-hint>
+            </mat-form-field>
+
+            <div class="form-row">
+              <mat-form-field appearance="outline">
+                <mat-label>Check-in</mat-label>
+                <input matInput [matDatepicker]="checkinPicker" formControlName="checkIn">
+                <mat-datepicker-toggle matIconSuffix [for]="checkinPicker"></mat-datepicker-toggle>
+                <mat-datepicker #checkinPicker></mat-datepicker>
+              </mat-form-field>
+              <mat-form-field appearance="outline">
+                <mat-label>Check-out</mat-label>
+                <input matInput [matDatepicker]="checkoutPicker" formControlName="checkOut">
+                <mat-datepicker-toggle matIconSuffix [for]="checkoutPicker"></mat-datepicker-toggle>
+                <mat-datepicker #checkoutPicker></mat-datepicker>
+              </mat-form-field>
+            </div>
+
+            <mat-form-field appearance="outline">
+              <mat-label>Number of Guests</mat-label>
+              <input matInput type="number" formControlName="numberOfGuests" min="1" max="10">
+            </mat-form-field>
+
+            <div class="step-actions">
+              <button mat-button matStepperPrevious>
+                <mat-icon>arrow_back</mat-icon> Back
+              </button>
+              <button mat-raised-button color="primary" matStepperNext>
+                Next <mat-icon>arrow_forward</mat-icon>
+              </button>
+            </div>
+          </form>
+        </mat-step>
+
+        <!-- Step 4: Options & Payment -->
+        <mat-step [stepControl]="paymentForm">
+          <ng-template matStepLabel>Options & Payment</ng-template>
+          <form [formGroup]="paymentForm" class="step-form">
+
+            <h3><mat-icon>settings</mat-icon> Additional Options</h3>
+            <div class="options-row">
+              <mat-checkbox formControlName="includeGroundTransport">
+                <mat-icon>directions_car</mat-icon> Include Ground Transport
+              </mat-checkbox>
+              <mat-checkbox formControlName="includeInsurance">
+                <mat-icon>security</mat-icon> Include Travel Insurance
+              </mat-checkbox>
+            </div>
+
+            @if (paymentForm.get('includeGroundTransport')?.value) {
+              <mat-divider></mat-divider>
+              <h3><mat-icon>directions_car</mat-icon> Ground Transport</h3>
+              <mat-form-field appearance="outline">
+                <mat-label>Transport Type</mat-label>
+                <mat-select formControlName="transportType">
+                  <mat-option value="Airport Transfer">Airport Transfer</mat-option>
+                  <mat-option value="Car Rental">Car Rental</mat-option>
+                  <mat-option value="FAIL">FAIL (simulate failure)</mat-option>
+                  <mat-option value="TIMEOUT">TIMEOUT (simulate timeout)</mat-option>
+                </mat-select>
+              </mat-form-field>
+            }
+
+            <mat-divider></mat-divider>
+
+            <h3><mat-icon>payment</mat-icon> Payment Details</h3>
+            <mat-form-field appearance="outline">
+              <mat-label>Card Number</mat-label>
+              <input matInput formControlName="cardNumber" placeholder="4242424242424242">
+            </mat-form-field>
+
+            <div class="form-row">
+              <mat-form-field appearance="outline">
+                <mat-label>Expiry Date</mat-label>
+                <input matInput formControlName="expiryDate" placeholder="12/28">
+              </mat-form-field>
+              <mat-form-field appearance="outline">
+                <mat-label>CVV</mat-label>
+                <input matInput formControlName="cvv" placeholder="123" type="password">
+              </mat-form-field>
+            </div>
+
+            <mat-form-field appearance="outline">
+              <mat-label>Amount</mat-label>
+              <input matInput type="number" formControlName="amount">
+              <span matTextPrefix>£&nbsp;</span>
+              <mat-hint>If amount is 0.01 - simulate authorisation failure PaymentAuthorisationFailed<br>
+                If amount is 1_000_000_000 - simulate slow payment gateway (timeout test). This will delay response for 35 seconds, causing PaymentAuthorisationTimedOut<br>
+                If amount is 999.99 - simulate PaymentCaptureFailed (with retry logic)<br>
+                If amount is 888.88 - simulate PaymentCaptureTimedOut</mat-hint>
+            </mat-form-field>
+
+            <div class="step-actions">
+              <button mat-button matStepperPrevious>
+                <mat-icon>arrow_back</mat-icon> Back
+              </button>
+              <button mat-raised-button color="primary" matStepperNext>
+                Review <mat-icon>arrow_forward</mat-icon>
+              </button>
+            </div>
+          </form>
+        </mat-step>
+
+        <!-- Step 5: Review & Submit -->
+        <mat-step>
+          <ng-template matStepLabel>Review & Submit</ng-template>
+          <div class="review-section">
+            <h3>Review Your Booking</h3>
+
+            <div class="review-grid">
+              <div class="review-card">
+                <h4><mat-icon>person</mat-icon> Customer</h4>
+                <p>{{ customerForm.get('customerName')?.value }}</p>
+                <p>{{ customerForm.get('customerEmail')?.value }}</p>
+              </div>
+
+              <div class="review-card">
+                <h4><mat-icon>flight</mat-icon> Flights</h4>
+                <p>{{ flightsForm.get('outboundOrigin')?.value }} → {{ flightsForm.get('outboundDestination')?.value }}</p>
+                <p>{{ flightsForm.get('outboundFlightNumber')?.value }} ({{ flightsForm.get('outboundDate')?.value | date:'MMM d, y' }})</p>
+                <p>Return: {{ flightsForm.get('returnFlightNumber')?.value }} ({{ flightsForm.get('returnDate')?.value | date:'MMM d, y' }})</p>
+              </div>
+
+              <div class="review-card">
+                <h4><mat-icon>hotel</mat-icon> Hotel</h4>
+                <p>{{ hotelForm.get('hotelName')?.value }}</p>
+                <p>{{ hotelForm.get('checkIn')?.value | date:'MMM d' }} - {{ hotelForm.get('checkOut')?.value | date:'MMM d, y' }}</p>
+                <p>{{ hotelForm.get('numberOfGuests')?.value }} guests</p>
+              </div>
+
+              <div class="review-card">
+                <h4><mat-icon>payment</mat-icon> Payment</h4>
+                <p>Card: **** {{ paymentForm.get('cardNumber')?.value?.slice(-4) }}</p>
+                <p class="amount">£{{ paymentForm.get('amount')?.value }}</p>
+                @if (paymentForm.get('includeGroundTransport')?.value) {
+                  <p><mat-icon>directions_car</mat-icon> Ground Transport</p>
+                }
+                @if (paymentForm.get('includeInsurance')?.value) {
+                  <p><mat-icon>security</mat-icon> Travel Insurance</p>
+                }
+              </div>
+            </div>
+
+            <div class="step-actions">
+              <button mat-button matStepperPrevious>
+                <mat-icon>arrow_back</mat-icon> Back
+              </button>
+              <button mat-raised-button color="primary"
+                      (click)="submitBooking()"
+                      [disabled]="isSubmitting">
+                @if (isSubmitting) {
+                  <mat-spinner diameter="20"></mat-spinner>
+                } @else {
+                  <ng-container><mat-icon>send</mat-icon></ng-container> Start SAGA
+                }
+              </button>
+            </div>
+          </div>
+        </mat-step>
+
+      </mat-stepper>
+    </mat-card-content>
+  </mat-card>
+</div>

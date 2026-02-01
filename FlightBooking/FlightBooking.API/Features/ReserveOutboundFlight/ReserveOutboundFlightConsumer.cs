@@ -22,24 +22,26 @@ public class ReserveOutboundFlightConsumer : IConsumer<ReserveOutboundFlightComm
     {
         var command = context.Message;
 
-        // SIMULATION: If the flight number contains "FAIL" - simulate an error (before saving)
+        // SIMULATION: If the flight number contains "FAIL" - simulate an error of airline API (before saving)
         if (command.FlightNumber.Contains("FAIL"))
         {
             await context.Publish(new FlightReservationFailed(
                 CorrelationId: command.CorrelationId,
                 TripId: command.TripId,
                 FlightNumber: command.FlightNumber,
-                Reason: "Simulated: Outbound flight unavailable"));
+                Reason: "Simulated error: Outbound flight unavailable"));
             return;
         }
 
-        // SIMULATION: If the flight number starts with "TIMEOUT" - simulate a timeout
+        // SIMULATION: If the flight number starts with "TIMEOUT" - simulate a timeout of airline API (before saving)
         if (command.FlightNumber.StartsWith("TIMEOUT"))
         {
             await Task.Delay(TimeSpan.FromSeconds(65), context.CancellationToken);
         }
 
         // Simulate flight reservation (in real scenario, call external airline API)
+        await Task.Delay(TimeSpan.FromSeconds(5));
+
         var reservation = new FlightReservation
         {
             Id = Guid.NewGuid(),

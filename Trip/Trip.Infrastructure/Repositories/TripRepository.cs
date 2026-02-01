@@ -76,4 +76,34 @@ public class TripRepository : ITripRepository
                 .SetProperty(t => t.CompletedAt, completedAt), cancellationToken);
         return rowsAffected > 0;
     }
+
+    public async Task<(IReadOnlyList<TripBooking> Items, int TotalCount)> GetAllAsync(
+        TripStatus? status = null,
+        Guid? customerId = null,
+        int page = 1,
+        int pageSize = 10,
+        CancellationToken cancellationToken = default)
+    {
+        var query = _dbContext.TripBookings.AsQueryable();
+
+        if (status.HasValue)
+        {
+            query = query.Where(t => t.Status == status.Value);
+        }
+
+        if (customerId.HasValue)
+        {
+            query = query.Where(t => t.CustomerId == customerId.Value);
+        }
+
+        var totalCount = await query.CountAsync(cancellationToken);
+
+        var items = await query
+            .OrderByDescending(t => t.CreatedAt)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync(cancellationToken);
+
+        return (items, totalCount);
+    }
 }

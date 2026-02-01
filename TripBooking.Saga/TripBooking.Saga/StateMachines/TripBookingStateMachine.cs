@@ -258,13 +258,18 @@ public class TripBookingStateMachine : MassTransitStateMachine<TripBookingSagaSt
 
             // Failure: transition to Failed state
             When(PaymentAuthorisationFailed)
-                .Then(context => context.Saga.IsPaymentAuthorised = false)
+                .Then(context =>
+                {
+                    context.Saga.IsPaymentAuthorised = false;
+                    context.Saga.FailureReason = context.Message.Reason;
+                })
                 .TransitionTo(Failed)
                 .Unschedule(PaymentAuthorisationTimeoutSchedule)
                 .Publish(context => CreateTripBookingFailedEvent(context.Saga, context.Message.Reason)),
 
             // Timeout: transition to TimedOut state
             When(PaymentAuthorisationTimeoutSchedule.Received)
+                .Then(context => context.Saga.FailureReason = $"Payment authorisation timed out after {_settings.PaymentAuthorisationTimeout.TotalSeconds} seconds")
                 .TransitionTo(TimedOut)
                 .Publish(context =>
                     CreateTripBookingFailedEvent(
@@ -298,13 +303,21 @@ public class TripBookingStateMachine : MassTransitStateMachine<TripBookingSagaSt
                 .Publish(context => CreateReserveReturnFlightCommand(context.Saga)),
 
             When(FlightReservationFailed)
-                .Then(context => context.Saga.IsOutboundFlightReserved = false)
+                .Then(context =>
+                {
+                    context.Saga.IsOutboundFlightReserved = false;
+                    context.Saga.FailureReason = context.Message.Reason;
+                })
                 .TransitionTo(ReleasingPayment)
                 .Unschedule(OutboundFlightReservationTimeoutSchedule)
                 .Publish(context => CreateReleasePaymentCommand(context.Saga, context.Message.Reason)),
 
             When(OutboundFlightReservationTimeoutSchedule.Received)
-                .Then(context => context.Saga.IsOutboundFlightReserved = false)
+                .Then(context =>
+                {
+                    context.Saga.IsOutboundFlightReserved = false;
+                    context.Saga.FailureReason = $"Outbound flight reservation timed out after {_settings.OutboundFlightReservationTimeout.TotalSeconds} seconds";
+                })
                 .TransitionTo(ReleasingPayment)
                 .Publish(context => CreateReleasePaymentCommand(context.Saga, $"Outbound flight reservation timed out after {_settings.OutboundFlightReservationTimeout.TotalSeconds} seconds")),
 
@@ -329,13 +342,21 @@ public class TripBookingStateMachine : MassTransitStateMachine<TripBookingSagaSt
                 .Publish(context => CreateReserveHotelCommand(context.Saga)),
 
             When(FlightReservationFailed)
-                .Then(context => context.Saga.IsReturnFlightReserved = false)
+                .Then(context =>
+                {
+                    context.Saga.IsReturnFlightReserved = false;
+                    context.Saga.FailureReason = context.Message.Reason;
+                })
                 .TransitionTo(CompensatingOutboundFlight)
                 .Unschedule(ReturnFlightReservationTimeoutSchedule)
                 .Publish(context => CreateCancelOutboundFlightCommand(context.Saga, context.Message.Reason)),
 
             When(ReturnFlightReservationTimeoutSchedule.Received)
-                .Then(context => context.Saga.IsReturnFlightReserved = false)
+                .Then(context =>
+                {
+                    context.Saga.IsReturnFlightReserved = false;
+                    context.Saga.FailureReason = $"Return flight reservation timed out after {_settings.ReturnFlightReservationTimeout.TotalSeconds} seconds";
+                })
                 .TransitionTo(CompensatingOutboundFlight)
                 .Publish(context =>
                     CreateCancelOutboundFlightCommand(
@@ -367,13 +388,21 @@ public class TripBookingStateMachine : MassTransitStateMachine<TripBookingSagaSt
                 .Publish(context => CreateConfirmHotelCommand(context.Saga)),
 
             When(HotelReservationFailed)
-                .Then(context => context.Saga.IsHotelReserved = false)
+                .Then(context =>
+                {
+                    context.Saga.IsHotelReserved = false;
+                    context.Saga.FailureReason = context.Message.Reason;
+                })
                 .TransitionTo(CompensatingReturnFlight)
                 .Unschedule(HotelReservationTimeoutSchedule)
                 .Publish(context => CreateCancelReturnFlightCommand(context.Saga, context.Message.Reason)),
 
             When(HotelReservationTimeoutSchedule.Received)
-                .Then(context => context.Saga.IsHotelReserved = false)
+                .Then(context =>
+                {
+                    context.Saga.IsHotelReserved = false;
+                    context.Saga.FailureReason = $"Hotel reservation timed out after {_settings.HotelReservationTimeout.TotalSeconds} seconds";
+                })
                 .TransitionTo(CompensatingReturnFlight)
                 .Publish(context =>
                     CreateCancelReturnFlightCommand(
@@ -422,7 +451,11 @@ public class TripBookingStateMachine : MassTransitStateMachine<TripBookingSagaSt
                         "Hotel confirmation expired")),
 
             When(HotelConfirmationTimeoutSchedule.Received)
-                .Then(context => context.Saga.IsHotelReserved = false)
+                .Then(context =>
+                {
+                    context.Saga.IsHotelReserved = false;
+                    context.Saga.FailureReason = $"Hotel confirmation timed out after {_settings.HotelConfirmationTimeout.TotalSeconds} seconds";
+                })
                 .TransitionTo(CompensatingHotel)
                 .Publish(context =>
                     CreateCancelHotelCommand(
@@ -463,13 +496,21 @@ public class TripBookingStateMachine : MassTransitStateMachine<TripBookingSagaSt
                         .Publish(context => CreateCapturePaymentCommand(context.Saga))),
 
             When(GroundTransportReservationFailed)
-                .Then(context => context.Saga.IsGroundTransportReserved = false)
+                .Then(context =>
+                {
+                    context.Saga.IsGroundTransportReserved = false;
+                    context.Saga.FailureReason = context.Message.Reason;
+                })
                 .TransitionTo(CompensatingHotel)
                 .Unschedule(GroundTransportReservationTimeoutSchedule)
                 .Publish(context => CreateCancelHotelCommand(context.Saga, context.Message.Reason)),
 
             When(GroundTransportReservationTimeoutSchedule.Received)
-                .Then(context => context.Saga.IsGroundTransportReserved = false)
+                .Then(context =>
+                {
+                    context.Saga.IsGroundTransportReserved = false;
+                    context.Saga.FailureReason = $"Ground transport reservation timed out after {_settings.GroundTransportReservationTimeout.TotalSeconds} seconds";
+                })
                 .TransitionTo(CompensatingHotel)
                 .Publish(context =>
                     CreateCancelHotelCommand(
@@ -501,7 +542,11 @@ public class TripBookingStateMachine : MassTransitStateMachine<TripBookingSagaSt
                 .Publish(context => CreateCapturePaymentCommand(context.Saga)),
 
             When(InsuranceIssueFailed)
-                .Then(context => context.Saga.IsInsuranceIssued = false)
+                .Then(context =>
+                {
+                    context.Saga.IsInsuranceIssued = false;
+                    context.Saga.FailureReason = context.Message.Reason;
+                })
                 .Unschedule(InsuranceIssuingTimeoutSchedule)
                 .IfElse(
                     context => context.Saga.IncludeGroundTransport,
@@ -513,7 +558,11 @@ public class TripBookingStateMachine : MassTransitStateMachine<TripBookingSagaSt
                         .Publish(context => CreateCancelHotelCommand(context.Saga, context.Message.Reason))),
 
             When(InsuranceIssuingTimeoutSchedule.Received)
-                .Then(context => context.Saga.IsInsuranceIssued = false)
+                .Then(context =>
+                {
+                    context.Saga.IsInsuranceIssued = false;
+                    context.Saga.FailureReason = $"Insurance issuing timed out after {_settings.InsuranceIssuingTimeout.TotalSeconds} seconds";
+                })
                 .IfElse(
                     context => context.Saga.IncludeGroundTransport,
                     withTransport => withTransport
@@ -561,7 +610,9 @@ public class TripBookingStateMachine : MassTransitStateMachine<TripBookingSagaSt
                         .Schedule(PaymentCaptureTimeoutSchedule, context =>
                             new PaymentCaptureTimedOut(context.Saga.CorrelationId, context.Saga.TripId, context.Saga.PaymentTransactionId))
                         .Publish(context => CreateCapturePaymentCommand(context.Saga)),
-                    exhausted => exhausted.IfElse(
+                    exhausted => exhausted
+                        .Then(context => context.Saga.FailureReason = context.Message.Reason)
+                        .IfElse(
                         context => context.Saga.IncludeInsurance,
                         withInsurance => withInsurance
                             .TransitionTo(CompensatingInsurance)
@@ -577,7 +628,11 @@ public class TripBookingStateMachine : MassTransitStateMachine<TripBookingSagaSt
                 ),
 
             When(PaymentCaptureTimeoutSchedule.Received)
-                .Then(context => context.Saga.IsPaymentCaptured = false)
+                .Then(context =>
+                {
+                    context.Saga.IsPaymentCaptured = false;
+                    context.Saga.FailureReason = $"Payment capture timed out after {_settings.PaymentCaptureTimeout.TotalSeconds} seconds";
+                })
                 .IfElse(
                     context => context.Saga.IncludeInsurance,
                     withInsurance => withInsurance

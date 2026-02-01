@@ -8,8 +8,20 @@ using Trip.Application.Abstractions;
 using Trip.Infrastructure.Persistence;
 using Trip.Infrastructure.Repositories;
 
+
 var builder = WebApplication.CreateBuilder(args);
 
+// CORS for Angular dashboard
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowDashboard", policy =>
+    {
+        policy.WithOrigins("http://localhost:4200")
+            .AllowAnyHeader()
+            .AllowAnyMethod()
+            .AllowCredentials();
+    });
+});
 builder.AddServiceDefaults();
 
 var settings = builder.RegisterApiSettings();
@@ -44,6 +56,8 @@ builder.Services.AddMassTransit(x =>
 builder.Services.AddOpenApi();
 
 var app = builder.Build();
+app.UseCors("AllowDashboard");
+app.UseHttpsRedirection();
 
 // Apply database migrations
 await app.MigrateDatabaseAsync<TripDbContext>();
@@ -62,7 +76,6 @@ if (app.Environment.IsDevelopment())
     app.MapGet("/", () => Results.Redirect("/swagger")).ExcludeFromDescription();
 }
 
-app.UseHttpsRedirection();
 
 // Map all endpoints implementing IEndpoint
 app.MapEndpoints();

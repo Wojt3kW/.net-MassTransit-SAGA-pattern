@@ -23,6 +23,8 @@ Enterprise-grade Travel Booking Platform that orchestrates:
 | Orchestration | .NET Aspire |
 | API | Minimal API + OpenAPI |
 | Health Checks | SQL Server, RabbitMQ, MassTransit |
+| **Frontend** | **Angular 21** (standalone components) + **Angular Material 21** |
+| Real-time | **Server-Sent Events (SSE)** for live SAGA state updates |
 
 ## Solution Structure
 
@@ -93,6 +95,31 @@ SAGA pattern.sln
     └── Notification.Contracts/
 ```
 
+## Angular Dashboard (FrontDashboard)
+
+Web-based monitoring dashboard for real-time SAGA state visualization.
+
+### Features
+- **Dashboard** - Live SAGA states table with SSE or polling
+- **Create Trip** - Multi-step wizard form with failure simulation hints
+- **Trip Details** - SAGA timeline, reservation status, tabs for flights/hotel/payment
+
+### Run the Dashboard
+
+```powershell
+cd FrontDashboard
+npm install
+npm start
+```
+
+Dashboard: `http://localhost:4200`
+
+### Technology Stack
+- Angular 21 (standalone components)
+- Angular Material 21
+- Server-Sent Events (SSE) for real-time updates
+- Reactive forms with validation
+
 ## Clean Architecture Layers
 
 ```
@@ -145,8 +172,9 @@ dotnet run --project "SAGA pattern.AppHost"
 6. ✅ **Failure simulation** - Test triggers in all consumers!
 7. ✅ **Implement timeouts** - Quartz scheduler with all 8 timeouts!
 8. ✅ **User Cancellation** - Cancel during booking with IsCancelledByUser flag!
-9. 🎯 Implement Manual Review State
-10. 🎯 Implement Inbox/Outbox patterns
+9. ✅ **Angular Dashboard** - Real-time monitoring with SSE!
+10. 🎯 Implement Manual Review State
+11. 🎯 Implement Inbox/Outbox patterns
 
 ## Testing
 

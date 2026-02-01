@@ -1,7 +1,7 @@
 using MassTransit;
 using Payment.Application.Abstractions;
-using Payment.Domain.Entities;
 using Payment.Contracts.Events;
+using Payment.Domain.Entities;
 using AuthorisePaymentCommand = Payment.Contracts.Commands.AuthorisePayment;
 
 namespace Payment.API.Features.AuthorisePayment;
@@ -58,6 +58,8 @@ public class AuthorisePaymentConsumer : IConsumer<AuthorisePaymentCommand>
         }
 
         // Simulate payment authorisation (in real scenario, call payment gateway)
+        await Task.Delay(TimeSpan.FromSeconds(5));
+
         var transaction = new PaymentTransaction
         {
             Id = Guid.NewGuid(),

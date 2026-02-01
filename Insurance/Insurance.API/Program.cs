@@ -9,6 +9,18 @@ using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// CORS for Angular dashboard
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowDashboard", policy =>
+    {
+        policy.WithOrigins("http://localhost:4200")
+            .AllowAnyHeader()
+            .AllowAnyMethod()
+            .AllowCredentials();
+    });
+});
+
 builder.AddServiceDefaults();
 
 var settings = builder.RegisterApiSettings();
@@ -38,6 +50,8 @@ builder.Services.AddMassTransit(x =>
 builder.Services.AddOpenApi();
 
 var app = builder.Build();
+app.UseCors("AllowDashboard");
+app.UseHttpsRedirection();
 
 // Apply database migrations
 await app.MigrateDatabaseAsync<InsuranceDbContext>();

@@ -8,6 +8,17 @@ using TripBooking.Saga.States;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// CORS for Angular dashboard
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowDashboard", policy =>
+    {
+        policy.WithOrigins("http://localhost:4200")
+            .AllowAnyHeader()
+            .AllowAnyMethod()
+            .AllowCredentials();
+    });
+});
 builder.AddServiceDefaults();
 
 var settings = builder.RegisterApiSettings();
@@ -82,6 +93,8 @@ builder.Services.AddControllers();
 builder.Services.AddAuthorization();
 
 var app = builder.Build();
+app.UseCors("AllowDashboard");
+app.UseHttpsRedirection();
 
 await app.MigrateDatabaseAsync<TripBookingSagaDbContext>();
 
