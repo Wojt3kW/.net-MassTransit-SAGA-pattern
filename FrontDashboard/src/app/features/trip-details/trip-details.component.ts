@@ -293,81 +293,97 @@ export class TripDetailsComponent implements OnInit, OnDestroy {
     if (!state) return [];
 
     const currentState = state.currentState || '';
-
-    // Use ID presence to determine if step was originally completed (before compensation)
-    // Boolean flags are reset during compensation, but IDs remain
-    const steps = [
-      {
-        name: 'Payment Auth',
-        icon: 'credit_card',
-        statePrefix: 'AwaitingPaymentAuthorisation',
-        isCompleted: !!state.paymentTransactionId,
-      },
-      {
-        name: 'Outbound Flight',
-        icon: 'flight_takeoff',
-        statePrefix: 'AwaitingOutboundFlight',
-        isCompleted: !!state.outboundFlightId,
-      },
-      {
-        name: 'Return Flight',
-        icon: 'flight_land',
-        statePrefix: 'AwaitingReturnFlight',
-        isCompleted: !!state.returnFlightId,
-      },
-      {
-        name: 'Hotel',
-        icon: 'hotel',
-        statePrefix: 'AwaitingHotel',
-        isCompleted: !!state.hotelReservationId,
-      },
-      {
-        name: 'Transport',
-        icon: 'directions_car',
-        statePrefix: 'AwaitingGroundTransport',
-        isCompleted: !!state.groundTransportId,
-        isOptional: !state.includeGroundTransport,
-      },
-      {
-        name: 'Insurance',
-        icon: 'security',
-        statePrefix: 'AwaitingInsurance',
-        isCompleted: !!state.insurancePolicyId,
-        isOptional: !state.includeInsurance,
-      },
-      {
-        name: 'Payment Capture',
-        icon: 'payment',
-        statePrefix: 'AwaitingPaymentCapture',
-        isCompleted: state.isPaymentCaptured,
-      },
-      {
-        name: 'Complete',
-        icon: 'check_circle',
-        statePrefix: 'Completed',
-        isCompleted: currentState === 'Completed' || currentState === 'Refunded',
-      },
-    ];
-
     const isFailed = currentState === 'Failed' || currentState.startsWith('Compensating');
     const isCancelled = currentState === 'Cancelled';
+    const isCompensating = currentState.startsWith('Compensating') || currentState === 'ReleasingPayment';
 
-    // Find which step actually failed (first incomplete, non-optional step)
-    let failedStepIndex = -1;
+    const steps = [
+      { name: 'Payment Auth', icon: 'credit_card', statePrefix: 'AwaitingPaymentAuthorisation', isOptional: false, order: 0 },
+      { name: 'Outbound Flight', icon: 'flight_takeoff', statePrefix: 'AwaitingOutboundFlight', isOptional: false, order: 1 },
+      { name: 'Return Flight', icon: 'flight_land', statePrefix: 'AwaitingReturnFlight', isOptional: false, order: 2 },
+      { name: 'Hotel', icon: 'hotel', statePrefix: 'AwaitingHotel', isOptional: false, order: 3 },
+      { name: 'Transport', icon: 'directions_car', statePrefix: 'AwaitingGroundTransport', isOptional: !state.includeGroundTransport, order: 4 },
+      { name: 'Insurance', icon: 'security', statePrefix: 'AwaitingInsurance', isOptional: !state.includeInsurance, order: 5 },
+      { name: 'Payment Capture', icon: 'payment', statePrefix: 'AwaitingPaymentCapture', isOptional: false, order: 6 },
+      { name: 'Complete', icon: 'check_circle', statePrefix: 'Completed', isOptional: false, order: 7 },
+    ];
+
+    // --- Determine the SAGA's progress high-water mark ---
+    // Some boolean flags survive compensation (isPaymentAuthorised, isHotelConfirmed)
+    // while others are reset (isOutboundFlightReserved, isHotelReserved, etc.)
+    // IDs can be set by late events in Failed state, so they're NOT reliable alone
+    // for steps after the last surviving boolean.
+    let confirmedUpTo = -1;
+
+    // Level 0: isPaymentAuthorised survives compensation
+    if (state.isPaymentAuthorised) confirmedUpTo = 0;
+
+    // Levels 1-2: Use flight IDs to bridge the gap to isHotelConfirmed
+    // (flight booleans get reset during compensation but IDs are reliable here
+    // because late flight events in Failed state DON'T set IDs without going through
+    // the normal flow — they only arrive if the SAGA actually sent the command)
+    if (confirmedUpTo >= 0 && !!state.outboundFlightId) confirmedUpTo = 1;
+    if (confirmedUpTo >= 1 && !!state.returnFlightId) confirmedUpTo = 2;
+
+    // Level 3: isHotelConfirmed survives compensation
+    if (state.isHotelConfirmed) confirmedUpTo = 3;
+
+    // Levels 4-5: paymentCaptureRetryCount > 0 means SAGA reached the capture step,
+    // proving all prior steps (transport, insurance) were confirmed
+    if (state.paymentCaptureRetryCount > 0 || state.isPaymentCaptured) confirmedUpTo = 5;
+
+    // Level 6: Payment was captured
+    if (state.isPaymentCaptured) confirmedUpTo = 6;
+
+    // Level 7: Booking completed
+    if (currentState === 'Completed' || currentState === 'Refunded') confirmedUpTo = 7;
+
+    // --- Find the failed step (first non-optional step after confirmedUpTo) ---
+    let failedStepOrder = -1;
     if (isFailed || isCancelled) {
-      failedStepIndex = steps.findIndex((s) => !s.isCompleted && !s.isOptional);
+      const failedStep = steps.find((s) => s.order > confirmedUpTo && !s.isOptional);
+      if (failedStep) failedStepOrder = failedStep.order;
     }
 
-    return steps.map((step, index) => ({
-      ...step,
-      completed: step.isCompleted,
-      active:
+    return steps.map((step) => {
+      const isCompleted = step.order <= confirmedUpTo;
+      const isActive =
         currentState.startsWith(step.statePrefix) ||
         (currentState.startsWith('AwaitingHotelConfirmation') &&
-          step.statePrefix === 'AwaitingHotel'),
-      failed: (isFailed || isCancelled) && index >= failedStepIndex && failedStepIndex >= 0,
-      status: this.getStepStatusFromFlags(step, currentState),
-    }));
+          step.statePrefix === 'AwaitingHotel');
+      const isTheFailedStep = failedStepOrder >= 0 && step.order === failedStepOrder;
+
+      // Compute display status
+      let status: string;
+      if (isActive) {
+        status = 'In Progress';
+      } else if (isCompleted) {
+        if (currentState === 'Completed' || currentState === 'Refunded') {
+          status = step.statePrefix === 'Completed' ? 'Done' : 'Completed';
+        } else if (isFailed || isCancelled) {
+          status = 'Compensated';
+        } else if (isCompensating) {
+          status = 'Compensating';
+        } else {
+          status = 'Completed';
+        }
+      } else if (step.isOptional) {
+        status = 'Skipped';
+      } else if (isTheFailedStep) {
+        status = isCancelled ? 'Cancelled' : 'Failed';
+      } else {
+        status = 'Pending';
+      }
+
+      return {
+        ...step,
+        completed: isCompleted,
+        isCompleted,
+        active: isActive,
+        failed: (isFailed || isCancelled) && failedStepOrder >= 0 && (isCompleted || isTheFailedStep),
+        status,
+      };
+    });
   });
 
   ngOnInit(): void {
