@@ -717,7 +717,7 @@ RefundPayment ──► PaymentRefunded (minus any fees)
 | **Inbox Pattern** | ✅ Implemented | MassTransit.EntityFrameworkCore - idempotency |
 | **Outbox Pattern** | ✅ Implemented | MassTransit.EntityFrameworkCore - at-least-once delivery |
 | **Distributed Tracing** | ✅ Implemented | OpenTelemetry + Jaeger (via Aspire) |
-| Post-Completion Refund | 🎯 TODO | RefundPayment flow |
+| Post-Completion Refund | ✅ Implemented | Completed → AwaitingPaymentRefund → Refunded |
 | Manual Review State | 🎯 TODO | For edge cases |
 
 ---

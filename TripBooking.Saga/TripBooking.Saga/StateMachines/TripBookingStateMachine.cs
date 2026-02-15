@@ -32,6 +32,7 @@ public class TripBookingStateMachine : MassTransitStateMachine<TripBookingSagaSt
     public State AwaitingGroundTransport { get; private set; } = null!;
     public State AwaitingInsurance { get; private set; } = null!;
     public State AwaitingPaymentCapture { get; private set; } = null!;
+    public State AwaitingPaymentRefund { get; private set; } = null!;
     public State Completed { get; private set; } = null!;
 
     // Compensation states
@@ -46,12 +47,15 @@ public class TripBookingStateMachine : MassTransitStateMachine<TripBookingSagaSt
     public State Failed { get; private set; } = null!;
     public State TimedOut { get; private set; } = null!;
     public State Cancelled { get; private set; } = null!;
+    public State Refunded { get; private set; } = null!;
 
     // Trip lifecycle events
     public Event<TripBookingCreated> TripBookingCreated { get; private set; } = null!;
     public Event<TripBookingCompleted> TripBookingCompleted { get; private set; } = null!;
     public Event<TripBookingFailed> TripBookingFailed { get; private set; } = null!;
     public Event<TripBookingCancelled> TripBookingCancelled { get; private set; } = null!;
+    public Event<TripRefundRequested> TripRefundRequested { get; private set; } = null!;
+    public Event<TripBookingRefunded> TripBookingRefunded { get; private set; } = null!;
 
     // Payment events
     public Event<PaymentAuthorised> PaymentAuthorised { get; private set; } = null!;
@@ -59,6 +63,7 @@ public class TripBookingStateMachine : MassTransitStateMachine<TripBookingSagaSt
     public Event<PaymentCaptured> PaymentCaptured { get; private set; } = null!;
     public Event<PaymentCaptureFailed> PaymentCaptureFailed { get; private set; } = null!;
     public Event<PaymentReleased> PaymentReleased { get; private set; } = null!;
+    public Event<PaymentRefunded> PaymentRefunded { get; private set; } = null!;
 
     // Flight events
     public Event<OutboundFlightReserved> OutboundFlightReserved { get; private set; } = null!;
@@ -114,6 +119,7 @@ public class TripBookingStateMachine : MassTransitStateMachine<TripBookingSagaSt
         ConfigureGroundTransportState();
         ConfigureInsuranceState();
         ConfigurePaymentCaptureState();
+        ConfigurePaymentRefundState();
         ConfigureCompensationStates();
         ConfigureTerminalStates();
     }
@@ -128,6 +134,8 @@ public class TripBookingStateMachine : MassTransitStateMachine<TripBookingSagaSt
         Event(() => TripBookingCompleted, x => x.CorrelateById(context => context.Message.TripId));
         Event(() => TripBookingFailed, x => x.CorrelateById(context => context.Message.TripId));
         Event(() => TripBookingCancelled, x => x.CorrelateById(context => context.Message.TripId));
+        Event(() => TripRefundRequested, x => x.CorrelateById(context => context.Message.TripId));
+        Event(() => TripBookingRefunded, x => x.CorrelateById(context => context.Message.TripId));
 
         // Payment events - correlate by CorrelationId
         Event(() => PaymentAuthorised, x => x.CorrelateById(context => context.Message.CorrelationId));
@@ -135,6 +143,7 @@ public class TripBookingStateMachine : MassTransitStateMachine<TripBookingSagaSt
         Event(() => PaymentCaptured, x => x.CorrelateById(context => context.Message.CorrelationId));
         Event(() => PaymentCaptureFailed, x => x.CorrelateById(context => context.Message.CorrelationId));
         Event(() => PaymentReleased, x => x.CorrelateById(context => context.Message.CorrelationId));
+        Event(() => PaymentRefunded, x => x.CorrelateById(context => context.Message.CorrelationId));
 
         // Flight events
         Event(() => OutboundFlightReserved, x => x.CorrelateById(context => context.Message.CorrelationId));
@@ -669,6 +678,20 @@ public class TripBookingStateMachine : MassTransitStateMachine<TripBookingSagaSt
         );
     }
 
+    private void ConfigurePaymentRefundState()
+    {
+        During(AwaitingPaymentRefund,
+            When(PaymentRefunded)
+                .Then(context =>
+                {
+                    context.Saga.IsRefunded = true;
+                    context.Saga.CompletedAt = DateTime.UtcNow;
+                })
+                .TransitionTo(Refunded)
+                .Publish(context => CreateTripBookingRefundedEvent(context.Saga))
+        );
+    }
+
     private void ConfigureCompensationStates()
     {
         During(CompensatingInsurance,
@@ -728,8 +751,12 @@ public class TripBookingStateMachine : MassTransitStateMachine<TripBookingSagaSt
 
     private void ConfigureTerminalStates()
     {
-        // Completed state - ignore redundant events
+        // Completed state - handle refund requests and ignore redundant events
         During(Completed,
+            When(TripRefundRequested)
+                .Then(context => context.Saga.RefundReason = context.Message.Reason)
+                .TransitionTo(AwaitingPaymentRefund)
+                .Publish(context => CreateRefundPaymentCommand(context.Saga, context.Message.Reason)),
             Ignore(TripBookingCompleted),
             Ignore(TripBookingFailed),
             Ignore(FlightCancelled),
@@ -879,6 +906,11 @@ public class TripBookingStateMachine : MassTransitStateMachine<TripBookingSagaSt
                         "Late payment authorisation received after cancellation - releasing funds")),
             Ignore(PaymentAuthorisationFailed),
             Ignore(PaymentReleased));
+
+        // Refunded state - terminal state after successful refund
+        During(Refunded,
+            Ignore(TripBookingRefunded),
+            Ignore(PaymentRefunded));
     }
 
     /// <summary>Helper methods for saga state initialization</summary>
@@ -1034,4 +1066,16 @@ public class TripBookingStateMachine : MassTransitStateMachine<TripBookingSagaSt
         new(TripId: saga.TripId,
             Reason: reason,
             FailedAt: DateTime.UtcNow);
+
+    private static RefundPayment CreateRefundPaymentCommand(TripBookingSagaState saga, string reason) =>
+        new(CorrelationId: saga.CorrelationId,
+            TripId: saga.TripId,
+            PaymentId: saga.PaymentTransactionId!.Value,
+            Amount: saga.TotalAmount,
+            Reason: reason);
+
+    private static TripBookingRefunded CreateTripBookingRefundedEvent(TripBookingSagaState saga) =>
+        new(TripId: saga.TripId,
+            RefundedAmount: saga.TotalAmount,
+            RefundedAt: DateTime.UtcNow);
 }

@@ -18,7 +18,7 @@ export interface TripBooking {
   failureReason?: string;
 }
 
-export type TripStatus = 'Pending' | 'Completed' | 'Failed' | 'Cancelled';
+export type TripStatus = 'Pending' | 'Processing' | 'Completed' | 'Failed' | 'Cancelled' | 'Refunded';
 
 export interface SagaState {
   correlationId: string;
@@ -120,6 +120,10 @@ export interface PaymentDetails {
 }
 
 export interface CancelTripRequest {
+  reason: string;
+}
+
+export interface RefundTripRequest {
   reason: string;
 }
 
@@ -231,7 +235,9 @@ export const SAGA_STATE_COLORS: Record<string, string> = {
   'AwaitingGroundTransport': '#26A69A',
   'AwaitingInsurance': '#5C6BC0',
   'AwaitingPaymentCapture': '#FFA726',
+  'AwaitingPaymentRefund': '#9C27B0',
   'Completed': '#66BB6A',
+  'Refunded': '#9C27B0',
   'Failed': '#EF5350',
   'Cancelled': '#BDBDBD',
   'TimedOut': '#FF7043',

@@ -35,6 +35,11 @@
               <mat-icon>cancel</mat-icon> Cancel Trip
             </button>
           }
+          @if (canRefund()) {
+            <button mat-raised-button color="accent" (click)="refundTrip()">
+              <mat-icon>payments</mat-icon> Request Refund
+            </button>
+          }
         </div>
       </div>
 
@@ -86,10 +91,10 @@
         <div class="flow-section">
           <h3 class="flow-title">
             <mat-icon>trending_flat</mat-icon>
-            Happy Path
+            Path
           </h3>
           <div class="flow-diagram">
-            @for (step of sagaFlow().happyPath; track step.id; let last = $last) {
+            @for (step of sagaFlow().path; track step.id; let last = $last) {
               <div class="flow-step" [class]="'status-' + step.status">
                 <div class="flow-step-icon">
                   <mat-icon>{{ step.icon }}</mat-icon>

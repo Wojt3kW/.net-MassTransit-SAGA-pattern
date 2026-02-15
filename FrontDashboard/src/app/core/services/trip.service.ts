@@ -6,6 +6,7 @@ import {
   SagaState,
   CreateTripRequest,
   CancelTripRequest,
+  RefundTripRequest,
   FlightReservation,
   HotelReservation,
   PaymentTransaction,
@@ -34,11 +35,12 @@ export class TripService {
   // Computed - based on sagaStates for real-time SSE updates
   readonly sagaCount = computed(() => this.sagaStates().length);
   readonly sagaCompletedCount = computed(() => this.sagaStates().filter(s => s.currentState === 'Completed').length);
+  readonly sagaRefundedCount = computed(() => this.sagaStates().filter(s => s.currentState === 'Refunded').length);
   readonly sagaFailedCount = computed(() => this.sagaStates().filter(s => s.currentState === 'Failed').length);
   readonly sagaCancelledCount = computed(() => this.sagaStates().filter(s => s.currentState === 'Cancelled').length);
   readonly sagaTimedOutCount = computed(() => this.sagaStates().filter(s => s.currentState === 'TimedOut').length);
   readonly sagaInProgressCount = computed(() => this.sagaStates().filter(s =>
-    !['Completed', 'Failed', 'Cancelled', 'TimedOut'].includes(s.currentState)
+    !['Completed', 'Refunded', 'Failed', 'Cancelled', 'TimedOut'].includes(s.currentState)
   ).length);
 
   // Legacy computed based on trips (for backwards compatibility)
@@ -70,6 +72,11 @@ export class TripService {
   cancelTrip(tripId: string, reason: string): Observable<void> {
     const request: CancelTripRequest = { reason };
     return this.http.post<void>(`${this.tripApiUrl}/trips/${tripId}/cancel`, request);
+  }
+
+  refundTrip(tripId: string, reason: string): Observable<void> {
+    const request: RefundTripRequest = { reason };
+    return this.http.post<void>(`${this.tripApiUrl}/trips/${tripId}/refund`, request);
   }
 
   // === SAGA API ===

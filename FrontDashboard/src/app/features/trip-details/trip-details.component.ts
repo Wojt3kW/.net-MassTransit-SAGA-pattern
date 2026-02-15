@@ -12,18 +12,15 @@ import { MatTabsModule } from '@angular/material/tabs';
 import { MatTableModule } from '@angular/material/table';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
-import { MatDialogModule, MatDialog } from '@angular/material/dialog';
+import { MatDialogModule } from '@angular/material/dialog';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { interval, Subscription } from 'rxjs';
 import { TripService } from '../../core/services/trip.service';
 import {
   SAGA_STATE_COLORS,
   SagaState,
-  TripBooking,
   FlightReservation,
   HotelReservation,
-  GroundTransportReservation,
-  InsurancePolicy,
   PaymentTransaction,
 } from '../../core/models/trip.models';
 
@@ -55,7 +52,6 @@ import {
 })
 export class TripDetailsComponent implements OnInit, OnDestroy {
   private route = inject(ActivatedRoute);
-  private router = inject(Router);
   private tripService = inject(TripService);
   private snackBar = inject(MatSnackBar);
   private pollingSubscription?: Subscription;
@@ -73,7 +69,7 @@ export class TripDetailsComponent implements OnInit, OnDestroy {
   /// </summary>
   sagaFlow = computed(() => {
     const state = this.sagaState();
-    if (!state) return { happyPath: [], compensationPath: [], failedStep: null };
+    if (!state) return { path: [], compensationPath: [], failedStep: null };
 
     const currentState = state.currentState || '';
     const isFailed = currentState === 'Failed';
@@ -81,27 +77,36 @@ export class TripDetailsComponent implements OnInit, OnDestroy {
     const isCompensating =
       currentState.startsWith('Compensating') || currentState === 'ReleasingPayment';
 
+    // Use ID presence to determine if step was originally completed (before compensation)
+    // Boolean flags are reset during compensation, but IDs remain
+    const wasOutboundReserved = !!state.outboundFlightId;
+    const wasReturnReserved = !!state.returnFlightId;
+    const wasHotelReserved = !!state.hotelReservationId;
+    const wasTransportReserved = !!state.groundTransportId;
+    const wasInsuranceIssued = !!state.insurancePolicyId;
+    const wasPaymentAuthorised = !!state.paymentTransactionId;
+
     // Define all happy path steps with their completion status
     const allSteps = [
       {
         id: 'payment-auth',
         name: 'Authorise Payment',
         icon: 'credit_card',
-        completed: state.isPaymentAuthorised,
+        completed: wasPaymentAuthorised,
       },
       {
         id: 'outbound',
         name: 'Reserve Outbound Flight',
         icon: 'flight_takeoff',
-        completed: state.isOutboundFlightReserved,
+        completed: wasOutboundReserved,
       },
       {
         id: 'return',
         name: 'Reserve Return Flight',
         icon: 'flight_land',
-        completed: state.isReturnFlightReserved,
+        completed: wasReturnReserved,
       },
-      { id: 'hotel', name: 'Reserve Hotel', icon: 'hotel', completed: state.isHotelReserved },
+      { id: 'hotel', name: 'Reserve Hotel', icon: 'hotel', completed: wasHotelReserved },
       {
         id: 'hotel-confirm',
         name: 'Confirm Hotel',
@@ -112,14 +117,14 @@ export class TripDetailsComponent implements OnInit, OnDestroy {
         id: 'transport',
         name: 'Reserve Transport',
         icon: 'directions_car',
-        completed: state.isGroundTransportReserved,
+        completed: wasTransportReserved,
         optional: !state.includeGroundTransport,
       },
       {
         id: 'insurance',
         name: 'Issue Insurance',
         icon: 'security',
-        completed: state.isInsuranceIssued,
+        completed: wasInsuranceIssued,
         optional: !state.includeInsurance,
       },
       {
@@ -132,28 +137,30 @@ export class TripDetailsComponent implements OnInit, OnDestroy {
         id: 'complete',
         name: 'Booking Complete',
         icon: 'check_circle',
-        completed: currentState === 'Completed',
+        completed: currentState === 'Completed' || currentState === 'Refunded',
       },
     ];
 
     // Filter out optional steps that weren't included
-    const happyPath = allSteps.filter((step) => !step.optional || step.completed);
+    const path = allSteps.filter((step) => !step.optional || step.completed);
 
     // Find the failed step (first incomplete step when failed)
     let failedStep: string | null = null;
     if (isFailed || isCancelled || isCompensating) {
-      const failedIndex = happyPath.findIndex((step) => !step.completed && !step.optional);
+      const failedIndex = path.findIndex((step) => !step.completed && !step.optional);
       if (failedIndex >= 0) {
-        failedStep = happyPath[failedIndex].id;
+        failedStep = path[failedIndex].id;
       }
     }
 
-    // Build compensation path based on what was completed
+    // Build compensation path based on what was completed (use ID presence)
+    // Boolean flags are reset during compensation, so we check if resource ID exists
     const compensationSteps: Array<{ id: string; name: string; icon: string; completed: boolean }> =
       [];
 
     if (isFailed || isCancelled || isCompensating) {
-      if (state.isInsuranceIssued) {
+      // Insurance compensation - only if insurance was issued
+      if (wasInsuranceIssued) {
         compensationSteps.push({
           id: 'cancel-insurance',
           name: 'Cancel Insurance',
@@ -161,7 +168,8 @@ export class TripDetailsComponent implements OnInit, OnDestroy {
           completed: !state.isInsuranceIssued || isFailed,
         });
       }
-      if (state.isGroundTransportReserved) {
+      // Ground transport compensation - only if transport was reserved
+      if (wasTransportReserved) {
         compensationSteps.push({
           id: 'cancel-transport',
           name: 'Cancel Transport',
@@ -169,7 +177,8 @@ export class TripDetailsComponent implements OnInit, OnDestroy {
           completed: !state.isGroundTransportReserved || isFailed,
         });
       }
-      if (state.isHotelReserved) {
+      // Hotel compensation - only if hotel was reserved
+      if (wasHotelReserved) {
         compensationSteps.push({
           id: 'cancel-hotel',
           name: 'Cancel Hotel',
@@ -177,7 +186,8 @@ export class TripDetailsComponent implements OnInit, OnDestroy {
           completed: !state.isHotelReserved || isFailed,
         });
       }
-      if (state.isReturnFlightReserved) {
+      // Return flight compensation - only if return flight was reserved
+      if (wasReturnReserved) {
         compensationSteps.push({
           id: 'cancel-return',
           name: 'Cancel Return Flight',
@@ -185,7 +195,8 @@ export class TripDetailsComponent implements OnInit, OnDestroy {
           completed: !state.isReturnFlightReserved || isFailed,
         });
       }
-      if (state.isOutboundFlightReserved) {
+      // Outbound flight compensation - only if outbound flight was reserved
+      if (wasOutboundReserved) {
         compensationSteps.push({
           id: 'cancel-outbound',
           name: 'Cancel Outbound Flight',
@@ -193,18 +204,19 @@ export class TripDetailsComponent implements OnInit, OnDestroy {
           completed: !state.isOutboundFlightReserved || isFailed,
         });
       }
-      if (state.isPaymentAuthorised) {
+      // Payment release - only if payment was authorised
+      if (wasPaymentAuthorised) {
         compensationSteps.push({
           id: 'release-payment',
           name: 'Release Payment',
           icon: 'money_off',
-          completed: isFailed,
+          completed: !state.isPaymentAuthorised || isFailed,
         });
       }
     }
 
     return {
-      happyPath: happyPath.map((step) => ({
+      path: path.map((step) => ({
         ...step,
         status: this.getFlowStepStatus(step, currentState, failedStep),
       })),
@@ -218,7 +230,7 @@ export class TripDetailsComponent implements OnInit, OnDestroy {
   });
 
   /// <summary>
-  /// Determines the status of a happy path step.
+  /// Determines the status of a path step.
   /// </summary>
   private getFlowStepStatus(
     step: { id: string; completed: boolean; optional?: boolean },
@@ -282,44 +294,45 @@ export class TripDetailsComponent implements OnInit, OnDestroy {
 
     const currentState = state.currentState || '';
 
-    // Define steps with their completion flags from SAGA state
+    // Use ID presence to determine if step was originally completed (before compensation)
+    // Boolean flags are reset during compensation, but IDs remain
     const steps = [
       {
         name: 'Payment Auth',
         icon: 'credit_card',
         statePrefix: 'AwaitingPaymentAuthorisation',
-        isCompleted: state.isPaymentAuthorised,
+        isCompleted: !!state.paymentTransactionId,
       },
       {
         name: 'Outbound Flight',
         icon: 'flight_takeoff',
         statePrefix: 'AwaitingOutboundFlight',
-        isCompleted: state.isOutboundFlightReserved,
+        isCompleted: !!state.outboundFlightId,
       },
       {
         name: 'Return Flight',
         icon: 'flight_land',
         statePrefix: 'AwaitingReturnFlight',
-        isCompleted: state.isReturnFlightReserved,
+        isCompleted: !!state.returnFlightId,
       },
       {
         name: 'Hotel',
         icon: 'hotel',
         statePrefix: 'AwaitingHotel',
-        isCompleted: state.isHotelReserved,
+        isCompleted: !!state.hotelReservationId,
       },
       {
         name: 'Transport',
         icon: 'directions_car',
         statePrefix: 'AwaitingGroundTransport',
-        isCompleted: state.isGroundTransportReserved,
+        isCompleted: !!state.groundTransportId,
         isOptional: !state.includeGroundTransport,
       },
       {
         name: 'Insurance',
         icon: 'security',
         statePrefix: 'AwaitingInsurance',
-        isCompleted: state.isInsuranceIssued,
+        isCompleted: !!state.insurancePolicyId,
         isOptional: !state.includeInsurance,
       },
       {
@@ -332,21 +345,27 @@ export class TripDetailsComponent implements OnInit, OnDestroy {
         name: 'Complete',
         icon: 'check_circle',
         statePrefix: 'Completed',
-        isCompleted: currentState === 'Completed',
+        isCompleted: currentState === 'Completed' || currentState === 'Refunded',
       },
     ];
 
     const isFailed = currentState === 'Failed' || currentState.startsWith('Compensating');
     const isCancelled = currentState === 'Cancelled';
 
-    return steps.map((step) => ({
+    // Find which step actually failed (first incomplete, non-optional step)
+    let failedStepIndex = -1;
+    if (isFailed || isCancelled) {
+      failedStepIndex = steps.findIndex((s) => !s.isCompleted && !s.isOptional);
+    }
+
+    return steps.map((step, index) => ({
       ...step,
       completed: step.isCompleted,
       active:
         currentState.startsWith(step.statePrefix) ||
         (currentState.startsWith('AwaitingHotelConfirmation') &&
           step.statePrefix === 'AwaitingHotel'),
-      failed: isFailed || isCancelled,
+      failed: (isFailed || isCancelled) && index >= failedStepIndex && failedStepIndex >= 0,
       status: this.getStepStatusFromFlags(step, currentState),
     }));
   });
@@ -505,5 +524,29 @@ export class TripDetailsComponent implements OnInit, OnDestroy {
         this.snackBar.open('Failed to cancel: ' + err.message, 'Close', { duration: 5000 });
       },
     });
+  }
+
+  /// <summary>
+  /// Requests a refund for a completed trip.
+  /// </summary>
+  refundTrip(): void {
+    if (!confirm('Are you sure you want to request a refund for this trip?')) return;
+
+    this.tripService.refundTrip(this.tripId, 'User requested refund').subscribe({
+      next: () => {
+        this.snackBar.open('Refund request sent', 'OK', { duration: 3000 });
+      },
+      error: (err) => {
+        this.snackBar.open('Failed to refund: ' + err.message, 'Close', { duration: 5000 });
+      },
+    });
+  }
+
+  /// <summary>
+  /// Checks if the current trip can be refunded (only completed trips).
+  /// </summary>
+  canRefund(): boolean {
+    const state = this.sagaState();
+    return state?.currentState === 'Completed';
   }
 }

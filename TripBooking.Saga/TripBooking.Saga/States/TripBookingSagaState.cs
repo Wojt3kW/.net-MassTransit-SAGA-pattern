@@ -171,5 +171,11 @@ namespace TripBooking.Saga.States
 
         /// <summary>Indicates whether the saga was cancelled by the user.</summary>
         public bool IsCancelledByUser { get; set; }
+
+        /// <summary>Indicates whether payment has been refunded.</summary>
+        public bool IsRefunded { get; set; }
+
+        /// <summary>Reason for refund request if applicable.</summary>
+        public string? RefundReason { get; set; }
     }
 }
